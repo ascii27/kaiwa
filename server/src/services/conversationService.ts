@@ -1,6 +1,7 @@
 import type { CharacterStyle, PersonaTone, StrictnessLevel } from "@kaiwa/shared";
 
 import { sendChatCompletion } from "../ai/openaiClient.js";
+import { logger } from "../logger.js";
 
 const personaPrompts: Record<PersonaTone, string> = {
   encouraging: "You are upbeat and supportive. Praise effort before corrections.",
@@ -66,6 +67,17 @@ export const generatePartnerResponse = async (input: {
     systemPrompt,
     messages,
   });
+
+  logger.debug(
+    {
+      context: "conversationService.generatePartnerResponse",
+      persona: input.persona,
+      strictness: input.strictness,
+      characterStyle: input.characterStyle,
+      raw,
+    },
+    "OpenAI response",
+  );
 
   return parsePartnerResponse(raw);
 };
