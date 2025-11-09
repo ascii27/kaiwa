@@ -80,6 +80,7 @@ model Turn {
   role      String
   text      String
   createdAt DateTime @default(now())
+  mistakes  Mistake[]
 }
 
 model Mistake {
