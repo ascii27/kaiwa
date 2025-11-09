@@ -3,7 +3,7 @@ import { WebSocketServer } from "ws";
 import type { WebSocket } from "ws";
 import jwt from "jsonwebtoken";
 
-import type { PersonaTone, StrictnessLevel } from "@kaiwa/shared";
+import type { CharacterStyle, PersonaTone, StrictnessLevel } from "@kaiwa/shared";
 
 import { env } from "../env.js";
 import { logger } from "../logger.js";
@@ -12,7 +12,7 @@ import {
   getRecentTurns,
   saveMistakes,
   saveTurn,
-  saveVocabulary
+  saveVocabulary,
 } from "../services/sessionService.js";
 import { analyzeMistakes } from "../services/mistakeService.js";
 import { generatePartnerResponse } from "../services/conversationService.js";
@@ -20,7 +20,7 @@ import { prisma } from "../db/prisma.js";
 import { OpenAIUnavailableError } from "../ai/openaiClient.js";
 
 interface WsMessage {
-  type: "user_message" | "add_vocab";
+  type: "user_message" | "add_vocab" | "session_prompt";
   payload: any;
 }
 
@@ -40,7 +40,7 @@ export const registerChatGateway = (server: Server) => {
     try {
       const decoded = jwt.verify(token, env.JWT_SECRET) as { userId: string };
       const session = await prisma.session.findFirst({
-        where: { id: sessionId, userId: decoded.userId }
+        where: { id: sessionId, userId: decoded.userId },
       });
       if (!session || session.status !== "ACTIVE") {
         socket.close(4401, "Session not found");
@@ -57,16 +57,30 @@ export const registerChatGateway = (server: Server) => {
               sessionId,
               language: session.language,
               persona: toPersona(session.persona),
-              strictness: toStrictness(session.strictness)
+              strictness: toStrictness(session.strictness),
+              characterStyle: toCharacterStyle(session.characterStyle),
             });
+          } else if (message.type === "session_prompt") {
+            await handleUserMessage(
+              {
+                socket,
+                text: message.payload.text,
+                sessionId,
+                language: session.language,
+                persona: toPersona(session.persona),
+                strictness: toStrictness(session.strictness),
+                characterStyle: toCharacterStyle(session.characterStyle),
+              },
+              { skipMistakes: true },
+            );
           } else if (message.type === "add_vocab") {
             const vocab = await saveVocabulary([
               {
                 sessionId,
                 phrase: message.payload.phrase,
                 translation: message.payload.translation,
-                context: message.payload.context
-              }
+                context: message.payload.context,
+              },
             ]);
             socket.send(JSON.stringify({ type: "vocab_update", payload: vocab }));
           }
@@ -90,21 +104,28 @@ const toStrictness = (value: string): StrictnessLevel => {
   return value.toLowerCase() as StrictnessLevel;
 };
 
-const handleUserMessage = async ({
-  socket,
-  text,
-  sessionId,
-  language,
-  persona,
-  strictness
-}: {
-  socket: WebSocket;
-  text: string;
-  sessionId: string;
-  language: string;
-  persona: PersonaTone;
-  strictness: StrictnessLevel;
-}) => {
+const toCharacterStyle = (value: string): CharacterStyle => value.toLowerCase() as CharacterStyle;
+
+const handleUserMessage = async (
+  {
+    socket,
+    text,
+    sessionId,
+    language,
+    persona,
+    strictness,
+    characterStyle,
+  }: {
+    socket: WebSocket;
+    text: string;
+    sessionId: string;
+    language: string;
+    persona: PersonaTone;
+    strictness: StrictnessLevel;
+    characterStyle: CharacterStyle;
+  },
+  options?: { skipMistakes?: boolean },
+) => {
   const userTurn = await saveTurn(sessionId, "user", text);
   try {
     const turns = await getRecentTurns(sessionId);
@@ -112,53 +133,52 @@ const handleUserMessage = async ({
       persona,
       strictness,
       language,
+      characterStyle,
       turns: turns.map((turn) => ({
         role: turn.role === "user" ? "user" : "ai",
-        text: turn.text
-      }))
+        text: turn.text,
+      })),
     });
 
-    const aiTurn = await saveTurn(sessionId, "ai", response);
+    const aiTurn = await saveTurn(sessionId, "ai", response.reply, response.translation);
     socket.send(
       JSON.stringify({
         type: "chat_message",
         payload: {
           role: "ai",
-          text: response,
-          turnId: aiTurn.id
-        }
-      })
+          text: response.reply,
+          turnId: aiTurn.id,
+          translation: response.translation,
+        },
+      }),
     );
 
-    const mistakes = await buildMistakes(sessionId, userTurn.id, text, language);
-    if (mistakes.length) {
-      socket.send(JSON.stringify({ type: "mistakes_update", payload: mistakes }));
+    if (!options?.skipMistakes) {
+      const mistakes = await buildMistakes(sessionId, userTurn.id, text, language);
+      if (mistakes.length) {
+        socket.send(JSON.stringify({ type: "mistakes_update", payload: mistakes }));
+      }
     }
   } catch (error) {
     if (error instanceof OpenAIUnavailableError) {
       socket.send(
         JSON.stringify({
           type: "openai_error",
-          payload: { message: "OpenAI unavailable. Please try again later." }
-        })
+          payload: { message: "OpenAI unavailable. Please try again later." },
+        }),
       );
       return;
     }
     socket.send(
       JSON.stringify({
         type: "error",
-        payload: { message: "Failed to process message." }
-      })
+        payload: { message: "Failed to process message." },
+      }),
     );
   }
 };
 
-const buildMistakes = async (
-  sessionId: string,
-  turnId: string,
-  text: string,
-  language: string
-) => {
+const buildMistakes = async (sessionId: string, turnId: string, text: string, language: string) => {
   const findings = await analyzeMistakes(text, language);
   const inputs: MistakeInput[] = findings.map((finding) => ({
     sessionId,
@@ -166,7 +186,7 @@ const buildMistakes = async (
     type: (finding.type ?? "grammar") as MistakeInput["type"],
     severity: finding.severity,
     message: finding.message,
-    correction: finding.correction
+    correction: finding.correction,
   }));
   return saveMistakes(inputs);
 };
