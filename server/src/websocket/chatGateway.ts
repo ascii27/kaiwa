@@ -137,6 +137,7 @@ const handleUserMessage = async (
       turns: turns.map((turn) => ({
         role: turn.role === "user" ? "user" : "ai",
         text: turn.text,
+        translation: turn.translation,
       })),
     });
 

@@ -38,11 +38,14 @@ ${strictnessPrompts[strictness]}
 ${characterPrompts[characterStyle]}
 Respond only in ${language} and encourage the learner to keep speaking.
 Return a single JSON object (no prose, markdown, or explanation) exactly like:
-{"reply":"<response in requested script>","translation":"<English translation>"}`;
+{"reply":"<response in requested script>","translation":"<English translation>"}
+Your only response should be JSON. No other text should sent on the reply. 
+You need to include both the reply and the translation every time.`;
 
 export interface ConversationTurn {
   role: "user" | "ai";
   text: string;
+  translation?: string | null;
 }
 
 export interface PartnerResponse {
@@ -60,24 +63,27 @@ export const generatePartnerResponse = async (input: {
   const systemPrompt = buildSystemPrompt(input);
   const messages = input.turns.map((turn) => ({
     role: turn.role === "user" ? "user" : "assistant",
-    content: turn.text,
+    content:
+      turn.role === "user"
+        ? turn.text
+        : JSON.stringify({
+            reply: turn.text,
+            translation: turn.translation ?? "",
+          }),
   }));
+
+  logger.debug(
+    {
+      systemPrompt,
+      messages,
+    },
+    "OpenAI transmission",
+  );
 
   const raw = await sendChatCompletion({
     systemPrompt,
     messages,
   });
-
-  logger.debug(
-    {
-      context: "conversationService.generatePartnerResponse",
-      persona: input.persona,
-      strictness: input.strictness,
-      characterStyle: input.characterStyle,
-      raw,
-    },
-    "OpenAI response",
-  );
 
   return parsePartnerResponse(raw);
 };
@@ -86,6 +92,13 @@ const parsePartnerResponse = (raw: string): PartnerResponse => {
   const tryParse = (input: string | null | undefined) => {
     if (!input) return null;
     try {
+      logger.debug(
+        {
+          input,
+        },
+        "OpenAI response",
+      );
+
       const data = JSON.parse(input);
       if (typeof data === "object" && data !== null && typeof data.reply === "string") {
         return {
