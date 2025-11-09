@@ -36,9 +36,8 @@ ${personaPrompts[persona]}
 ${strictnessPrompts[strictness]}
 ${characterPrompts[characterStyle]}
 Respond only in ${language} and encourage the learner to keep speaking.
-Return a JSON object with keys:
-- reply: your response in the requested script
-- translation: English translation of your response`;
+Return a single JSON object (no prose, markdown, or explanation) exactly like:
+{"reply":"<response in requested script>","translation":"<English translation>"}`;
 
 export interface ConversationTurn {
   role: "user" | "ai";
@@ -72,17 +71,36 @@ export const generatePartnerResponse = async (input: {
 };
 
 const parsePartnerResponse = (raw: string): PartnerResponse => {
-  try {
-    const data = JSON.parse(raw);
-    if (typeof data === "object" && data !== null && typeof data.reply === "string") {
-      return {
-        reply: data.reply,
-        translation: typeof data.translation === "string" ? data.translation : undefined,
-      };
+  const tryParse = (input: string | null | undefined) => {
+    if (!input) return null;
+    try {
+      const data = JSON.parse(input);
+      if (typeof data === "object" && data !== null && typeof data.reply === "string") {
+        return {
+          reply: data.reply.trim(),
+          translation:
+            typeof data.translation === "string" && data.translation.length
+              ? data.translation.trim()
+              : undefined,
+        };
+      }
+    } catch {
+      return null;
     }
-  } catch {
-    // fall back to raw string
+    return null;
+  };
+
+  const trimmed = raw.trim();
+  const exact = tryParse(trimmed);
+  if (exact) return exact;
+
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start !== -1 && end !== -1 && end > start) {
+    const sliced = trimmed.slice(start, end + 1);
+    const slicedResult = tryParse(sliced);
+    if (slicedResult) return slicedResult;
   }
 
-  return { reply: raw, translation: undefined };
+  return { reply: trimmed, translation: undefined };
 };
