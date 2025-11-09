@@ -1,0 +1,15 @@
+{
+  "id": "jp-beginner-travel-1",
+  "language": "japanese",
+  "level": "beginner",
+  "scenario": "travel-checkin",
+  "summary": "Check into a hotel and ask about breakfast time.",
+  "starterTurns": [
+    { "role": "ai", "text": "いらっしゃいませ。ご予約の名前を教えてください。" },
+    { "role": "user", "text": "ガロウェイです。2泊の予約があります。" }
+  ],
+  "vocabulary": [
+    { "phrase": "予約 (よやく)", "translation": "reservation" },
+    { "phrase": "朝食 (ちょうしょく)", "translation": "breakfast" }
+  ]
+}

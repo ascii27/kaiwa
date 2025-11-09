@@ -1,0 +1,15 @@
+{
+  "id": "jp-beginner-casual-1",
+  "language": "japanese",
+  "level": "beginner",
+  "scenario": "casual-conversation",
+  "summary": "Meet a friend for coffee and talk about daily routines.",
+  "starterTurns": [
+    { "role": "ai", "text": "今日はどうだった？仕事は忙しかった？" },
+    { "role": "user", "text": "うん、少し忙しかったけど大丈夫。" }
+  ],
+  "vocabulary": [
+    { "phrase": "忙しい (いそがしい)", "translation": "busy" },
+    { "phrase": "大丈夫 (だいじょうぶ)", "translation": "all good" }
+  ]
+}

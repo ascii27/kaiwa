@@ -1,0 +1,81 @@
+:root {
+  --kaiwa-bg: #f5f7fb;
+  --kaiwa-panel-bg: #ffffff;
+  --kaiwa-border: #d9e2ec;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: var(--kaiwa-bg);
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.chat-shell {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+}
+
+@media (max-width: 992px) {
+  .chat-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chat-thread {
+  background: var(--kaiwa-panel-bg);
+  border: 1px solid var(--kaiwa-border);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  height: 65vh;
+  overflow-y: auto;
+}
+
+.message-bubble {
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  margin-bottom: 0.75rem;
+  max-width: 85%;
+}
+
+.message-bubble.user {
+  margin-left: auto;
+  background-color: #0d6efd;
+  color: #fff;
+}
+
+.message-bubble.ai {
+  background-color: #e9f2ff;
+  color: #0b286b;
+}
+
+.side-panel {
+  background: var(--kaiwa-panel-bg);
+  border: 1px solid var(--kaiwa-border);
+  border-radius: 1rem;
+  padding: 1rem;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+.mistake-item,
+.vocab-item {
+  border: 1px solid var(--kaiwa-border);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.composer {
+  background: var(--kaiwa-panel-bg);
+  border: 1px solid var(--kaiwa-border);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.badge-pill {
+  border-radius: 999px;
+}

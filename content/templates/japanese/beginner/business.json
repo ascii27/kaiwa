@@ -1,0 +1,15 @@
+{
+  "id": "jp-beginner-business-1",
+  "language": "japanese",
+  "level": "beginner",
+  "scenario": "business-intro",
+  "summary": "Introduce yourself to a new colleague and discuss roles.",
+  "starterTurns": [
+    { "role": "ai", "text": "初めまして。私は佐藤です。担当は営業です。" },
+    { "role": "user", "text": "初めまして。マイケルです。プロダクトを担当しています。" }
+  ],
+  "vocabulary": [
+    { "phrase": "担当 (たんとう)", "translation": "be in charge of" },
+    { "phrase": "営業 (えいぎょう)", "translation": "sales" }
+  ]
+}

@@ -20,6 +20,23 @@ Kaiwa is your always-available conversation partner that spots mistakes, tracks 
 - `/spec/phases` – Detailed technical direction for each delivery phase.
 - `AGENTS.md` – Coding standards, repo map, and workflow expectations for contributors (including AI agents).
 
+## Getting Started
+1. Install dependencies: `pnpm install`
+2. Copy `server/.env.example` to `server/.env` and fill in `DATABASE_URL`, `JWT_SECRET`, and `OPENAI_API_KEY`. (For automated testing/downstream agents, `server/.env.test` is already provided.)
+3. Run database migrations (Prisma): `pnpm --filter @kaiwa/server prisma migrate dev`
+4. Seed conversation templates by storing JSON files under `content/templates/<language>/<level>/`.
+
+### Local Development
+- Backend: `pnpm --filter @kaiwa/server dev`
+- Frontend: `pnpm --filter @kaiwa/client dev`
+
+Vite proxies API calls to the Node server on port 4000. WebSocket traffic is sent directly to `ws://localhost:4000/ws/chat`.
+
+### Testing & Linting
+- Run lint across all packages: `pnpm lint`
+- Run tests: `pnpm test`
+- Format files: `pnpm format`
+
 ## Development Workflow
 1. Read the relevant spec/phase doc plus `AGENTS.md`.
 2. Create a feature branch from `main` using `feature/<description>` naming.

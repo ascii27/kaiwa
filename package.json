@@ -1,0 +1,22 @@
+{
+  "name": "kaiwa",
+  "private": true,
+  "packageManager": "pnpm@8.10.0",
+  "scripts": {
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "format": "pnpm -r format",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md}": [
+      "pnpm format",
+      "pnpm lint"
+    ]
+  }
+}

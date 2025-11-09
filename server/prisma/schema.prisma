@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PersonaTone {
+  ENCOURAGING
+  NEUTRAL
+  BLUNT
+  HUMOROUS
+}
+
+enum StrictnessLevel {
+  GENTLE
+  STANDARD
+  STRICT
+}
+
+enum SessionStatus {
+  ACTIVE
+  ENDED
+}
+
+enum MistakeType {
+  GRAMMAR
+  PRONUNCIATION
+  VOCABULARY
+}
+
+enum MasteryState {
+  NEW
+  LEARNING
+  MASTERED
+}
+
+model User {
+  id        String       @id @default(cuid())
+  email     String       @unique
+  password  String
+  createdAt DateTime     @default(now())
+  sessions  Session[]
+  settings  UserSettings?
+}
+
+model UserSettings {
+  id         String          @id @default(cuid())
+  user       User            @relation(fields: [userId], references: [id])
+  userId     String          @unique
+  targetLang String
+  persona    PersonaTone     @default(ENCOURAGING)
+  strictness StrictnessLevel @default(GENTLE)
+  renderMode String          @default("kanji")
+}
+
+model Session {
+  id         String          @id @default(cuid())
+  user       User            @relation(fields: [userId], references: [id])
+  userId     String
+  language   String
+  level      String
+  scenarioId String?
+  persona    PersonaTone
+  strictness StrictnessLevel
+  status     SessionStatus   @default(ACTIVE)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  turns      Turn[]
+  mistakes   Mistake[]
+  vocabulary VocabularyItem[]
+}
+
+model Turn {
+  id        String   @id @default(cuid())
+  session   Session  @relation(fields: [sessionId], references: [id])
+  sessionId String
+  role      String
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model Mistake {
+  id        String      @id @default(cuid())
+  session   Session     @relation(fields: [sessionId], references: [id])
+  sessionId String
+  turn      Turn        @relation(fields: [turnId], references: [id])
+  turnId    String
+  type      MistakeType
+  severity  String
+  message   String
+  correction String
+  createdAt DateTime    @default(now())
+}
+
+model VocabularyItem {
+  id        String       @id @default(cuid())
+  session   Session      @relation(fields: [sessionId], references: [id])
+  sessionId String
+  phrase    String
+  translation String
+  context   String
+  mastery   MasteryState @default(NEW)
+  createdAt DateTime     @default(now())
+}
+
+model Template {
+  id        String   @id
+  language  String
+  level     String
+  scenario  String
+  summary   String
+  data      Json
+  createdAt DateTime @default(now())
+}
