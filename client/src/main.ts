@@ -58,6 +58,9 @@ interface AppState {
     levels: string[];
     scenarios: { id: string; scenario: string }[];
   };
+  // Navigation
+  viewMode: "home" | "conversation" | "review" | "settings" | "admin";
+  isSidebarCollapsed: boolean;
 }
 
 class KaiwaApp {
@@ -108,6 +111,8 @@ class KaiwaApp {
         startingPrompt: "",
       },
       adminMeta: { templates: [], languages: [], levels: [], scenarios: [] },
+      viewMode: "conversation",
+      isSidebarCollapsed: false,
     };
   }
 
@@ -142,27 +147,98 @@ class KaiwaApp {
   }
 
   private render() {
+    const sideNav = this.renderSideNav();
+    const mainContent = this.renderMainContent();
     this.root.innerHTML = `
-      <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h1 class="h3 mb-1">Kaiwa Practice Studio</h1>
-            <p class="text-muted mb-0">AI language partner for real conversations.</p>
+      <div class="app-shell">
+        ${sideNav}
+        <div class="main-pane">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h1 class="h5 mb-1">Kaiwa</h1>
+            </div>
+            ${this.state.token ? `<button class="btn btn-outline-secondary btn-sm" id="logout-btn">Logout</button>` : ""}
           </div>
-          ${this.state.token ? `<button class="btn btn-outline-secondary" id="logout-btn">Logout</button>` : ""}
+          ${this.state.error ? `<div class="alert alert-danger">${this.state.error}</div>` : ""}
+          ${this.state.token ? mainContent : this.renderAuth()}
         </div>
-        ${this.state.error ? `<div class="alert alert-danger">${this.state.error}</div>` : ""}
-        ${this.state.token ? this.renderWorkspace() : this.renderAuth()}
       </div>
     `;
 
     if (!this.state.token) {
       this.bindAuthHandlers();
     } else {
-      this.bindWorkspaceHandlers();
+      this.bindNavHandlers();
+      this.bindViewHandlers();
     }
 
     this.scrollChatToBottom();
+  }
+
+  private renderSideNav() {
+    const collapsed = this.state.isSidebarCollapsed ? "collapsed" : "";
+    return `
+      <aside class="side-nav ${collapsed}">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="fw-semibold">Menu</span>
+          <button id="nav-toggle" class="btn btn-sm btn-outline-secondary">${
+            this.state.isSidebarCollapsed ? "»" : "«"
+          }</button>
+        </div>
+        <ul class="nav nav-pills flex-column gap-1">
+          <li class="nav-item"><a href="#" class="nav-link ${
+            this.state.viewMode === "home" ? "active" : ""
+          }" data-view="home">Home</a></li>
+          <li class="nav-item"><a href="#" class="nav-link ${
+            this.state.viewMode === "conversation" ? "active" : ""
+          }" data-view="conversation">Conversation</a></li>
+          <li class="nav-item"><a href="#" class="nav-link ${
+            this.state.viewMode === "review" ? "active" : ""
+          }" data-view="review">Review</a></li>
+          <li class="nav-item"><a href="#" class="nav-link ${
+            this.state.viewMode === "settings" ? "active" : ""
+          }" data-view="settings">Settings</a></li>
+          <li class="nav-item"><a href="#" class="nav-link ${
+            this.state.viewMode === "admin" ? "active" : ""
+          }" data-view="admin">Admin</a></li>
+        </ul>
+      </aside>
+    `;
+  }
+
+  private renderMainContent() {
+    switch (this.state.viewMode) {
+      case "home":
+        return this.renderHome();
+      case "conversation":
+        return this.renderWorkspace();
+      case "review":
+        return this.renderReview();
+      case "settings":
+        return this.renderSettings();
+      case "admin":
+        return this.renderAdmin();
+      default:
+        return this.renderWorkspace();
+    }
+  }
+
+  private renderHome() {
+    return `<div class="card border-0 shadow-sm"><div class="card-body"><h2 class="h5 mb-2">Home</h2><p class="text-muted mb-0">Dashboard & progress will appear here.</p></div></div>`;
+  }
+
+  private renderReview() {
+    return `<div class="card border-0 shadow-sm"><div class="card-body"><h2 class="h5 mb-2">Review</h2><p class="text-muted mb-0">Grammar and vocabulary drills will be available here.</p></div></div>`;
+  }
+
+  private renderSettings() {
+    return `<div class="card border-0 shadow-sm"><div class="card-body"><h2 class="h5 mb-2">Settings</h2><p class="text-muted mb-0">Adjust your level, language, and preferences here (coming soon).</p></div></div>`;
+  }
+
+  private renderAdmin() {
+    // Ensure meta is loaded
+    // Note: this only renders; actual loading triggered when switching to this view via handler
+    return this.renderAdminPanel();
   }
 
   private renderAuth() {
@@ -212,9 +288,6 @@ class KaiwaApp {
     return `
       <div class="mb-4">
         ${this.renderSessionForm()}
-      </div>
-      <div class="mb-4">
-        ${this.renderAdminPanel()}
       </div>
       ${
         this.state.sessionId
