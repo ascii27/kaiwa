@@ -1,10 +1,70 @@
 <div class="card border-0 shadow-sm">
   <div class="card-body">
-    <ul class="nav nav-pills mb-3">
-      <li class="nav-item"><a href="#" class="nav-link active">Prompts</a></li>
-      <li class="nav-item"><a href="#" class="nav-link">Main Configuration</a></li>
-    </ul>
-    <p class="text-muted">Admin tooling will be migrated here.</p>
+    <h2 class="h6 mb-3">Prompts (Templates)</h2>
+    <div class="row g-3">
+      <div class="col-lg-4">
+        <div class="mb-2 d-flex align-items-center gap-2">
+          <select class="form-select form-select-sm w-auto" value={{this.filterLanguage}} {{on "change" this.setFilterLanguage}}>
+            {{#each this.languages as |l|}}
+              <option value={{l}}>{{l}}</option>
+            {{/each}}
+          </select>
+          <select class="form-select form-select-sm w-auto" value={{this.filterLevel}} {{on "change" this.setFilterLevel}}>
+            {{#each this.levels as |lv|}}
+              <option value={{lv}}>{{lv}}</option>
+            {{/each}}
+          </select>
+          <input class="form-control form-control-sm" placeholder="Search scenario" value={{this.search}} {{on "input" this.setSearch}} />
+          <button class="btn btn-sm btn-outline-primary" {{on "click" this.newTemplate}} type="button">New</button>
+        </div>
+        <div class="list-group small">
+          {{#if this.loadingList}}
+            <div class="text-muted">Loading...</div>
+          {{else}}
+            {{#if this.filteredList.length}}
+              {{#each this.filteredList as |t|}}
+                <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {{if (this.isSelected t.id) 'active'}}" {{on "click" (fn this.selectTemplate t.id)}}>
+                  <span>{{t.scenario}}</span>
+                  <span class="badge bg-light text-dark">{{t.level}}</span>
+                </button>
+              {{/each}}
+            {{else}}
+              <div class="text-muted small">No results.</div>
+            {{/if}}
+          {{/if}}
+        </div>
+      </div>
+      <div class="col-lg-8">
+        {{#if this.error}}<div class="alert alert-danger">{{this.error}}</div>{{/if}}
+        {{#if this.status}}<div class="alert alert-success">{{this.status}}</div>{{/if}}
+        <form class="vstack gap-2" {{on "submit" this.saveEditor}}>
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label">Language</label>
+              <select class="form-select" value={{this.editor.language}} {{on "change" (fn this.onField "language")}}>
+                {{#each this.languages as |l|}}<option value={{l}}>{{l}}</option>{{/each}}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Level</label>
+              <select class="form-select" value={{this.editor.level}} {{on "change" (fn this.onField "level")}}>
+                {{#each this.levels as |lv|}}<option value={{lv}}>{{lv}}</option>{{/each}}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Scenario</label>
+              <input class="form-control" value={{this.editor.scenario}} {{on "input" (fn this.onField "scenario")}} />
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Starting Prompt</label>
+            <textarea class="form-control" rows="6" {{on "input" (fn this.onField "startingPrompt")}}>{{this.editor.startingPrompt}}</textarea>
+          </div>
+          <div>
+            <button class="btn btn-primary" disabled={{if this.canSave false true}} type="submit">{{if this.isNew 'Save New' 'Save Changes'}}</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </div>
-
