@@ -84,6 +84,7 @@ export default class ConversationController extends Controller {
   async connectSocket(sessionId, initialPrompt) {
     if (!this.session.token) return;
     this.chat.close();
+    this.chat.clearHandlers();
     this.chat.on('chat_message', (payload) => {
       this.messages = [
         ...this.messages,

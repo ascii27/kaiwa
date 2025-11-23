@@ -10,6 +10,11 @@ export default class ChatSocketService extends Service {
   ws = null;
   handlers = {};
 
+  clearHandlers() {
+    this.logger.debug('ws.clear_handlers');
+    this.handlers = {};
+  }
+
   connect(token, sessionId) {
     return new Promise((resolve, reject) => {
       const url = `${WS_BASE}/ws/chat?token=${token}&sessionId=${sessionId}`;
@@ -39,6 +44,7 @@ export default class ChatSocketService extends Service {
   }
 
   emit(event, payload) {
+    this.logger.debug('ws.emit', { event });
     this.handlers[event]?.forEach((h) => h(payload));
   }
 
