@@ -232,7 +232,50 @@ class KaiwaApp {
   }
 
   private renderSettings() {
-    return `<div class="card border-0 shadow-sm"><div class="card-body"><h2 class="h5 mb-2">Settings</h2><p class="text-muted mb-0">Adjust your level, language, and preferences here (coming soon).</p></div></div>`;
+    const loaded = !!this.state.token;
+    return `
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h2 class="h5 mb-3">Settings</h2>
+          <form id="settings-form" class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Language</label>
+              <select class="form-select" name="targetLang" value="${this.state.language}">
+                ${["japanese", "english", "spanish", "korean", "chinese"].map((l) => `<option value="${l}" ${this.state.language === l ? "selected" : ""}>${l}</option>`).join("")}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Persona</label>
+              <select class="form-select" name="persona" value="${this.state.persona}">
+                <option value="encouraging" ${this.state.persona === "encouraging" ? "selected" : ""}>Encouraging</option>
+                <option value="neutral" ${this.state.persona === "neutral" ? "selected" : ""}>Neutral</option>
+                <option value="blunt" ${this.state.persona === "blunt" ? "selected" : ""}>Blunt</option>
+                <option value="humorous" ${this.state.persona === "humorous" ? "selected" : ""}>Humorous</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Strictness</label>
+              <select class="form-select" name="strictness" value="${this.state.strictness}">
+                <option value="gentle" ${this.state.strictness === "gentle" ? "selected" : ""}>Gentle</option>
+                <option value="standard" ${this.state.strictness === "standard" ? "selected" : ""}>Standard</option>
+                <option value="strict" ${this.state.strictness === "strict" ? "selected" : ""}>Strict</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Output Script</label>
+              <select class="form-select" name="renderMode" value="${this.state.characterStyle}">
+                <option value="kanji" ${this.state.characterStyle === "kanji" ? "selected" : ""}>Kanji + Kana</option>
+                <option value="hiragana" ${this.state.characterStyle === "hiragana" ? "selected" : ""}>Hiragana only</option>
+                <option value="romaji" ${this.state.characterStyle === "romaji" ? "selected" : ""}>Romaji</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-primary" ${!loaded ? "disabled" : ""}>Save Settings</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
   }
 
   private renderAdmin() {
@@ -787,6 +830,64 @@ class KaiwaApp {
         });
       }
     });
+  }
+
+  private bindNavHandlers() {
+    const nav = this.root.querySelector(".side-nav");
+    nav?.addEventListener("click", async (e) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName.toLowerCase() === "a" && target.getAttribute("data-view")) {
+        e.preventDefault();
+        const view = target.getAttribute("data-view") as AppState["viewMode"];
+        const next: Partial<AppState> = { viewMode: view };
+        if (view === "admin") {
+          next.showAdmin = true;
+          await this.loadAdminMeta();
+        }
+        this.setState(next);
+      }
+    });
+
+    const toggle = document.getElementById("nav-toggle");
+    toggle?.addEventListener("click", () => {
+      this.setState({ isSidebarCollapsed: !this.state.isSidebarCollapsed });
+    });
+  }
+
+  private bindViewHandlers() {
+    if (this.state.viewMode === "conversation") {
+      this.bindWorkspaceHandlers();
+    } else if (this.state.viewMode === "admin") {
+      this.bindWorkspaceHandlers();
+    } else if (this.state.viewMode === "settings") {
+      if (this.state.token) {
+        this.fetchAndPopulateSettings();
+      }
+      const form = document.getElementById("settings-form") as HTMLFormElement | null;
+      form?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!this.state.token) return;
+        const fd = new FormData(form);
+        const payload = {
+          targetLang: String(fd.get("targetLang") || this.state.language),
+          persona: String(fd.get("persona") || this.state.persona),
+          strictness: String(fd.get("strictness") || this.state.strictness),
+          renderMode: String(fd.get("renderMode") || this.state.characterStyle),
+        };
+        try {
+          const result = await api.updateSettings(this.state.token, payload);
+          this.setState({
+            language: result.settings.targetLang,
+            persona: result.settings.persona,
+            strictness: result.settings.strictness,
+            characterStyle: result.settings.renderMode,
+            error: null,
+          });
+        } catch (err) {
+          this.setState({ error: (err as Error).message });
+        }
+      });
+    }
   }
 
   private toggleTranslation(index: number) {

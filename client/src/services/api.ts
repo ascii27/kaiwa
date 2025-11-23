@@ -70,4 +70,17 @@ export const api = {
       body: JSON.stringify(vocab),
       token,
     }),
+  getSettings: (token: string) =>
+    apiFetch(`/settings`, {
+      token,
+    }),
+  updateSettings: (
+    token: string,
+    body: { targetLang: string; persona: string; strictness: string; renderMode: string },
+  ) =>
+    apiFetch(`/settings`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+      token,
+    }),
 };

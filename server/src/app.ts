@@ -6,6 +6,7 @@ import { httpLogger } from "./logger.js";
 import { authRouter } from "./routes/auth.js";
 import { sessionRouter } from "./routes/sessions.js";
 import { templateRouter } from "./routes/templates.js";
+import { settingsRouter } from "./routes/settings.js";
 
 export const createApp = () => {
   const app = express();
@@ -13,8 +14,8 @@ export const createApp = () => {
   app.use(helmet());
   app.use(
     cors({
-      origin: "*"
-    })
+      origin: "*",
+    }),
   );
   app.use(express.json({ limit: "1mb" }));
   app.use(httpLogger);
@@ -26,6 +27,7 @@ export const createApp = () => {
   app.use("/auth", authRouter);
   app.use("/sessions", sessionRouter);
   app.use("/templates", templateRouter);
+  app.use("/settings", settingsRouter);
 
   return app;
 };
