@@ -1,0 +1,40 @@
+:root {
+  --kaiwa-bg: #f5f7fb;
+  --kaiwa-panel-bg: #ffffff;
+  --kaiwa-border: #d9e2ec;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background-color: var(--kaiwa-bg);
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+.app-shell.is-collapsed {
+  grid-template-columns: 64px 1fr;
+}
+
+.side-nav {
+  background: var(--kaiwa-panel-bg);
+  border-right: 1px solid var(--kaiwa-border);
+  padding: 1rem;
+}
+
+.side-nav.collapsed {
+  overflow: hidden;
+}
+
+.app-shell.is-collapsed .side-nav .nav-label,
+.app-shell.is-collapsed .side-nav .brand-label {
+  display: none;
+}
+
+main {
+  padding: 1rem 1rem 2rem;
+}
+

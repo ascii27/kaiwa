@@ -1,0 +1,21 @@
+<aside class="side-nav {{if @collapsed 'collapsed'}}">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="fw-semibold nav-label">Menu</span>
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-secondary"
+      aria-label="Toggle navigation"
+      aria-pressed={{@collapsed}}
+      {{on "click" @onToggle}}
+    >{{if @collapsed '»' '«'}}</button>
+  </div>
+  <nav>
+    <ul class="nav nav-pills flex-column gap-1">
+      <li class="nav-item"><LinkTo @route="home" @activeClass="active" class="nav-link"><span class="nav-label">Home</span></LinkTo></li>
+      <li class="nav-item"><LinkTo @route="conversation" @activeClass="active" class="nav-link"><span class="nav-label">Conversation</span></LinkTo></li>
+      <li class="nav-item"><LinkTo @route="review" @activeClass="active" class="nav-link"><span class="nav-label">Review</span></LinkTo></li>
+      <li class="nav-item"><LinkTo @route="settings" @activeClass="active" class="nav-link"><span class="nav-label">Settings</span></LinkTo></li>
+      <li class="nav-item"><LinkTo @route="admin" @activeClass="active" class="nav-link"><span class="nav-label">Admin</span></LinkTo></li>
+    </ul>
+  </nav>
+</aside>

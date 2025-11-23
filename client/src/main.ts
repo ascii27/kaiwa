@@ -61,12 +61,14 @@ interface AppState {
   // Navigation
   viewMode: "home" | "conversation" | "review" | "settings" | "admin";
   isSidebarCollapsed: boolean;
+  adminTab: "prompts" | "config";
 }
 
 class KaiwaApp {
   private state: AppState;
   private root: HTMLElement;
   private socket: ChatSocket | null = null;
+  private suspendRender = false;
   private bubbleClickHandler = (event: Event) => {
     const target = event.target as HTMLElement;
     const bubble = target.closest(".message-bubble.ai") as HTMLElement | null;
@@ -82,6 +84,7 @@ class KaiwaApp {
 
   constructor(root: HTMLElement) {
     const storedToken = localStorage.getItem("kaiwa_token");
+    const collapsedPref = localStorage.getItem("kaiwa_sidebar_collapsed");
     this.root = root;
     this.state = {
       token: storedToken,
@@ -112,14 +115,27 @@ class KaiwaApp {
       },
       adminMeta: { templates: [], languages: [], levels: [], scenarios: [] },
       viewMode: "conversation",
-      isSidebarCollapsed: false,
+      isSidebarCollapsed: collapsedPref === "true",
+      adminTab: "prompts",
     };
   }
 
   async init() {
+    // Avoid multiple renders during boot; batch state updates
+    this.suspendRender = true;
     if (this.state.token) {
+      await this.fetchAndPopulateSettings().catch(() => undefined);
       await this.loadTemplates();
     }
+    // Restore admin tab from hash
+    const hash = window.location.hash || "";
+    if (hash.includes("#admin=")) {
+      const tab = hash.split("#admin=")[1] as AppState["adminTab"];
+      if (tab === "prompts" || tab === "config") {
+        this.state.adminTab = tab;
+      }
+    }
+    this.suspendRender = false;
     this.render();
   }
 
@@ -143,19 +159,22 @@ class KaiwaApp {
 
   private setState(update: Partial<AppState>) {
     this.state = { ...this.state, ...update };
-    this.render();
+    if (!this.suspendRender) {
+      this.render();
+    }
   }
 
   private render() {
     const sideNav = this.renderSideNav();
     const mainContent = this.renderMainContent();
+    const shellClass = `app-shell ${this.state.isSidebarCollapsed ? "is-collapsed" : ""}`;
     this.root.innerHTML = `
-      <div class="app-shell">
+      <div class="${shellClass}">
         ${sideNav}
         <div class="main-pane">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-              <h1 class="h5 mb-1">Kaiwa</h1>
+              <h1 class="h5 mb-1"><span class="brand-label">Kaiwa</span></h1>
             </div>
             ${this.state.token ? `<button class="btn btn-outline-secondary btn-sm" id="logout-btn">Logout</button>` : ""}
           </div>
@@ -177,31 +196,28 @@ class KaiwaApp {
 
   private renderSideNav() {
     const collapsed = this.state.isSidebarCollapsed ? "collapsed" : "";
+    const link = (view: AppState["viewMode"], label: string) => {
+      const active = this.state.viewMode === view ? "active" : "";
+      const aria = this.state.viewMode === view ? 'aria-current="page"' : "";
+      return `<a href="#" class="nav-link ${active}" data-view="${view}" title="${label}" ${aria}><span class="nav-label">${label}</span></a>`;
+    };
     return `
       <aside class="side-nav ${collapsed}">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <span class="fw-semibold">Menu</span>
-          <button id="nav-toggle" class="btn btn-sm btn-outline-secondary">${
+          <span class="fw-semibold nav-label">Menu</span>
+          <button id="nav-toggle" class="btn btn-sm btn-outline-secondary" aria-label="Toggle navigation" aria-pressed="${this.state.isSidebarCollapsed}">${
             this.state.isSidebarCollapsed ? "»" : "«"
           }</button>
         </div>
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item"><a href="#" class="nav-link ${
-            this.state.viewMode === "home" ? "active" : ""
-          }" data-view="home">Home</a></li>
-          <li class="nav-item"><a href="#" class="nav-link ${
-            this.state.viewMode === "conversation" ? "active" : ""
-          }" data-view="conversation">Conversation</a></li>
-          <li class="nav-item"><a href="#" class="nav-link ${
-            this.state.viewMode === "review" ? "active" : ""
-          }" data-view="review">Review</a></li>
-          <li class="nav-item"><a href="#" class="nav-link ${
-            this.state.viewMode === "settings" ? "active" : ""
-          }" data-view="settings">Settings</a></li>
-          <li class="nav-item"><a href="#" class="nav-link ${
-            this.state.viewMode === "admin" ? "active" : ""
-          }" data-view="admin">Admin</a></li>
-        </ul>
+        <nav>
+          <ul class="nav nav-pills flex-column gap-1">
+            <li class="nav-item">${link("home", "Home")}</li>
+            <li class="nav-item">${link("conversation", "Conversation")}</li>
+            <li class="nav-item">${link("review", "Review")}</li>
+            <li class="nav-item">${link("settings", "Settings")}</li>
+            <li class="nav-item">${link("admin", "Admin")}</li>
+          </ul>
+        </nav>
       </aside>
     `;
   }
@@ -279,9 +295,28 @@ class KaiwaApp {
   }
 
   private renderAdmin() {
-    // Ensure meta is loaded
-    // Note: this only renders; actual loading triggered when switching to this view via handler
-    return this.renderAdminPanel();
+    // Sub-navigation: Config (placeholder) and Prompts
+    const tab = this.state.adminTab;
+    const tabLink = (id: AppState["adminTab"], label: string) => {
+      const active = tab === id ? "active" : "";
+      return `<li class="nav-item"><a href="#" class="nav-link ${active}" data-admin-tab="${id}">${label}</a></li>`;
+    };
+    const body = tab === "config" ? this.renderAdminConfig() : this.renderAdminPanel();
+    return `
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <ul class="nav nav-pills mb-3">
+            ${tabLink("prompts", "Prompts")}
+            ${tabLink("config", "Main Configuration")}
+          </ul>
+          ${body}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderAdminConfig() {
+    return `<div class="text-muted">System/content settings coming soon.</div>`;
   }
 
   private renderAuth() {
@@ -434,42 +469,14 @@ class KaiwaApp {
   }
 
   private renderSessionForm() {
+    const summary = `${this.state.language} • ${this.state.level} • ${this.state.persona} • ${this.state.strictness} • ${this.state.characterStyle}`;
+    const hasScenario = Boolean(this.state.selectedTemplateId || (this.state.templates?.[0]?.id ?? ""));
     return `
-      <form id="session-form" class="row g-3 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label">Level</label>
-          <select class="form-select" name="level" value="${this.state.level}">
-            <option value="beginner" ${this.state.level === "beginner" ? "selected" : ""}>Beginner</option>
-            <option value="intermediate" ${this.state.level === "intermediate" ? "selected" : ""}>Intermediate</option>
-            <option value="advanced" ${this.state.level === "advanced" ? "selected" : ""}>Advanced</option>
-          </select>
+      <div class="row g-3 align-items-end">
+        <div class="col-12">
+          <div class="small text-muted">Using Settings: ${summary} — <a href="#" data-go-settings>Change</a></div>
         </div>
-        <div class="col-md-3">
-          <label class="form-label">Persona</label>
-          <select class="form-select" name="persona" value="${this.state.persona}">
-            <option value="encouraging" ${this.state.persona === "encouraging" ? "selected" : ""}>Encouraging</option>
-            <option value="neutral" ${this.state.persona === "neutral" ? "selected" : ""}>Neutral</option>
-            <option value="blunt" ${this.state.persona === "blunt" ? "selected" : ""}>Blunt</option>
-            <option value="humorous" ${this.state.persona === "humorous" ? "selected" : ""}>Humorous</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Strictness</label>
-          <select class="form-select" name="strictness" value="${this.state.strictness}">
-            <option value="gentle" ${this.state.strictness === "gentle" ? "selected" : ""}>Gentle</option>
-            <option value="standard" ${this.state.strictness === "standard" ? "selected" : ""}>Standard</option>
-            <option value="strict" ${this.state.strictness === "strict" ? "selected" : ""}>Strict</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Output Script</label>
-          <select class="form-select" name="characterStyle" value="${this.state.characterStyle}">
-            <option value="kanji" ${this.state.characterStyle === "kanji" ? "selected" : ""}>Kanji + Kana</option>
-            <option value="hiragana" ${this.state.characterStyle === "hiragana" ? "selected" : ""}>Hiragana only</option>
-            <option value="romaji" ${this.state.characterStyle === "romaji" ? "selected" : ""}>Romaji</option>
-          </select>
-        </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
           <label class="form-label">Scenario</label>
           <select class="form-select" name="scenarioId">
             ${(this.state.templates || [])
@@ -483,11 +490,14 @@ class KaiwaApp {
           </select>
         </div>
         <div class="col-12 col-lg-12 col-xl-12 d-grid">
-          <button class="btn btn-primary" ${this.state.isStartingSession ? "disabled" : ""}>
-            ${this.state.isStartingSession ? "Starting..." : "Start Session"}
-          </button>
+          <form id="session-form">
+            ${!hasScenario ? `<div class="text-danger small mb-2">Select a scenario to start.</div>` : ""}
+            <button class="btn btn-primary" ${this.state.isStartingSession || !hasScenario ? "disabled" : ""}>
+              ${this.state.isStartingSession ? "Starting..." : "Start Session"}
+            </button>
+          </form>
         </div>
-      </form>
+      </div>
     `;
   }
 
@@ -661,27 +671,21 @@ class KaiwaApp {
     const sessionForm = document.getElementById("session-form") as HTMLFormElement | null;
     sessionForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const formData = new FormData(sessionForm);
-      const level = (formData.get("level") as string) ?? this.state.level;
-      const persona = (formData.get("persona") as string) ?? "encouraging";
-      const strictness = (formData.get("strictness") as string) ?? "standard";
-      const characterStyle = (formData.get("characterStyle") as string) ?? "kanji";
-      const scenarioId = (formData.get("scenarioId") as string) || undefined;
-      if (level !== this.state.level) {
-        this.setState({ level });
-      }
-      await this.startSession({ persona, strictness, characterStyle, scenarioId });
+      const formEl = document.querySelector('select[name="scenarioId"]') as HTMLSelectElement | null;
+      const scenarioId = formEl?.value || this.state.selectedTemplateId || undefined;
+      await this.startSession({
+        persona: this.state.persona,
+        strictness: this.state.strictness,
+        characterStyle: this.state.characterStyle,
+        scenarioId,
+      });
     });
 
-    // Reload templates when level changes
-    const levelSelect = sessionForm?.querySelector(
-      'select[name="level"]',
-    ) as HTMLSelectElement | null;
-    levelSelect?.addEventListener("change", async (event) => {
-      const target = event.target as HTMLSelectElement;
-      const level = target.value as AppState["level"];
-      this.setState({ level, selectedTemplateId: undefined, templates: [] });
-      await this.loadTemplates();
+    // Settings shortcut
+    const settingsLink = document.querySelector('[data-go-settings]') as HTMLAnchorElement | null;
+    settingsLink?.addEventListener("click", (e) => {
+      e.preventDefault();
+      this.setState({ viewMode: "settings" });
     });
 
     const messageForm = document.getElementById("message-form") as HTMLFormElement | null;
@@ -732,7 +736,7 @@ class KaiwaApp {
       const action = target.getAttribute("data-action");
       const formData = new FormData(adminForm);
       const language = String(formData.get("language") || "japanese").trim();
-      const level = String(formData.get("level") || "beginner").trim() as AppState["level"];
+      const level = String(formData.get("level") || "beginner").trim() as AppState["admin"]["level"];
       const scenarioField = String(formData.get("scenario") || "").trim();
       const startingPrompt = String(formData.get("startingPrompt") || "");
 
@@ -752,7 +756,7 @@ class KaiwaApp {
           const userLine = t.starterTurns?.find((turn) => turn.role === "user")?.text ?? "";
           setAdmin({
             language: t.language,
-            level: t.level as AppState["level"],
+            level: t.level as AppState["admin"]["level"],
             scenario: t.scenario,
             startingPrompt: userLine,
             selectedId: t.id,
@@ -800,7 +804,7 @@ class KaiwaApp {
         const levels = Array.from(
           new Set(templates.filter((t: any) => t.language === language).map((t: any) => t.level)),
         );
-        const level = (levels[0] as AppState["level"]) || "beginner";
+        const level = (levels[0] as AppState["admin"]["level"]) || "beginner";
         const scenarios = templates
           .filter((t: any) => t.language === language && t.level === level)
           .map((t: any) => ({ id: t.id, scenario: t.scenario }));
@@ -811,7 +815,7 @@ class KaiwaApp {
         return;
       }
       if (name === "level") {
-        const level = (target as HTMLSelectElement).value as AppState["level"];
+        const level = (target as HTMLSelectElement).value as AppState["admin"]["level"];
         const templates = this.state.adminMeta.templates;
         const scenarios = templates
           .filter((t: any) => t.language === this.state.admin.language && t.level === level)
@@ -836,9 +840,11 @@ class KaiwaApp {
     const nav = this.root.querySelector(".side-nav");
     nav?.addEventListener("click", async (e) => {
       const target = e.target as HTMLElement;
-      if (target.tagName.toLowerCase() === "a" && target.getAttribute("data-view")) {
+      const link = target.closest('a[data-view]') as HTMLAnchorElement | null;
+      if (link) {
         e.preventDefault();
-        const view = target.getAttribute("data-view") as AppState["viewMode"];
+        const view = link.getAttribute("data-view") as AppState["viewMode"];
+        console.log("[nav] click", { tag: target.tagName, view });
         const next: Partial<AppState> = { viewMode: view };
         if (view === "admin") {
           next.showAdmin = true;
@@ -850,14 +856,34 @@ class KaiwaApp {
 
     const toggle = document.getElementById("nav-toggle");
     toggle?.addEventListener("click", () => {
-      this.setState({ isSidebarCollapsed: !this.state.isSidebarCollapsed });
+      const next = !this.state.isSidebarCollapsed;
+      localStorage.setItem("kaiwa_sidebar_collapsed", String(next));
+      this.setState({ isSidebarCollapsed: next });
+      (toggle as HTMLButtonElement).setAttribute("aria-pressed", String(next));
+      console.log("[nav] toggle", { collapsed: next });
     });
   }
 
   private bindViewHandlers() {
     if (this.state.viewMode === "conversation") {
+      // Ensure templates reflect current settings defaults
+      if (!this.state.templates.length) {
+        this.loadTemplates();
+      }
       this.bindWorkspaceHandlers();
     } else if (this.state.viewMode === "admin") {
+      // Admin tab switching + data
+      document.querySelectorAll('[data-admin-tab]').forEach((el) => {
+        el.addEventListener("click", (e) => {
+          e.preventDefault();
+          const tab = (e.currentTarget as HTMLElement).getAttribute("data-admin-tab") as AppState["adminTab"];
+          if (tab === "prompts" || tab === "config") {
+            window.location.hash = `#admin=${tab}`;
+            console.log("[admin] switch tab", { tab });
+            this.setState({ adminTab: tab });
+          }
+        });
+      });
       this.bindWorkspaceHandlers();
     } else if (this.state.viewMode === "settings") {
       if (this.state.token) {
@@ -883,10 +909,28 @@ class KaiwaApp {
             characterStyle: result.settings.renderMode,
             error: null,
           });
+          // Refresh templates for new language
+          await this.loadTemplates();
         } catch (err) {
           this.setState({ error: (err as Error).message });
         }
       });
+    }
+  }
+
+  private async fetchAndPopulateSettings() {
+    if (!this.state.token) return;
+    try {
+      const result = await api.getSettings(this.state.token);
+      const s = result.settings ?? {};
+      this.setState({
+        language: s.targetLang ?? this.state.language,
+        persona: s.persona ?? this.state.persona,
+        strictness: s.strictness ?? this.state.strictness,
+        characterStyle: s.renderMode ?? this.state.characterStyle,
+      });
+    } catch (e) {
+      // Non-fatal; leave defaults
     }
   }
 

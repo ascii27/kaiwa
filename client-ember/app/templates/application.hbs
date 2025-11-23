@@ -1,0 +1,12 @@
+<div class="ember-view">
+  <div class="app-shell {{if this.sidebarCollapsed 'is-collapsed'}}">
+    <UiSideNav
+      @collapsed={{this.sidebarCollapsed}}
+      @onToggle={{this.toggleSidebar}}
+      @active={{this.currentRouteName}}
+    />
+    <main>
+      {{outlet}}
+    </main>
+  </div>
+</div>

@@ -25,6 +25,11 @@ body {
   min-height: 100vh;
 }
 
+/* Collapsed sidebar adjusts the grid, not just the aside width */
+.app-shell.is-collapsed {
+  grid-template-columns: 64px 1fr;
+}
+
 .side-nav {
   background: var(--kaiwa-panel-bg);
   border-right: 1px solid var(--kaiwa-border);
@@ -32,8 +37,13 @@ body {
 }
 
 .side-nav.collapsed {
-  width: 64px;
   overflow: hidden;
+}
+
+/* Hide text labels when collapsed; keep icons/titles accessible */
+.app-shell.is-collapsed .side-nav .nav-label,
+.app-shell.is-collapsed .side-nav .brand-label {
+  display: none;
 }
 
 .main-pane {
