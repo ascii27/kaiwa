@@ -1,24 +1,22 @@
 <div class="mb-3 small text-muted">Using Settings: {{this.settings.targetLang}} • {{this.settings.level}} • {{this.settings.persona}} • {{this.settings.strictness}} • {{this.settings.renderMode}} — <LinkTo @route="settings">Change</LinkTo></div>
-<div class="card border-0 shadow-sm mb-4">
-  <div class="card-body">
-    <div class="row g-3 align-items-end">
-      <div class="col-md-4">
-        <label class="form-label">Scenario</label>
-        <select class="form-select" value={{this.selectedTemplateId}} {{on "change" this.selectScenario}}>
+<div class="conversation-toolbar card border-0 shadow-sm mb-3">
+  <div class="card-body py-2">
+    <form class="d-flex align-items-center gap-3 justify-content-between" {{on "submit" this.startSession}}>
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 me-2">Scenario</label>
+        <select class="form-select form-select-sm" value={{this.selectedTemplateId}} {{on "change" this.selectScenario}}>
           {{#each @model.templates as |t|}}
             <option value={{t.id}}>{{t.summary}}</option>
           {{/each}}
         </select>
       </div>
-      <div class="col-12 col-lg-12 col-xl-12 d-grid">
-        <form {{on "submit" this.startSession}}>
-          {{#unless this.canStart}}<div class="text-danger small mb-2">Select a scenario to start.</div>{{/unless}}
-          <button class="btn btn-primary" disabled={{this.isStartDisabled}}>{{if this.isStarting "Starting..." "Start Session"}}</button>
-        </form>
+      <div class="d-flex align-items-center gap-2">
+        {{#unless this.canStart}}<span class="text-danger small">Select a scenario</span>{{/unless}}
+        <button class="btn btn-primary btn-sm" disabled={{this.isStartDisabled}}>{{if this.isStarting "Starting..." "Start Scenario"}}</button>
       </div>
-    </div>
+    </form>
   </div>
-</div>
+ </div>
 
 {{#if this.error}}<div class="alert alert-danger">{{this.error}}</div>{{/if}}
 
