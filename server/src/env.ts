@@ -11,7 +11,7 @@ if (fs.existsSync(envPath)) {
 dotenvSafe.config({
   path: envPath,
   allowEmptyValues: false,
-  example: ".env.example"
+  example: ".env.example",
 });
 
 const envSchema = z.object({
@@ -21,7 +21,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16),
   OPENAI_API_KEY: z.string().min(10),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
-  OPENAI_TIMEOUT_MS: z.coerce.number().default(15000)
+  OPENAI_TIMEOUT_MS: z.coerce.number().default(15000),
+  ADMIN_EMAILS: z.string().optional().default(""),
 });
 
 export const env = envSchema.parse(process.env);

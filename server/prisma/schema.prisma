@@ -112,11 +112,12 @@ model VocabularyItem {
   translation String
   context   String
   mastery   MasteryState @default(NEW)
+  dueAt     DateTime     @default(now())
   createdAt DateTime     @default(now())
 }
 
 model Template {
-  id        String   @id
+  id        String   @id @default(cuid())
   language  String
   level     String
   scenario  String

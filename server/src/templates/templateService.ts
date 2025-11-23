@@ -1,61 +1,37 @@
-import fs from "node:fs";
-import fsPromises from "node:fs/promises";
-import path from "node:path";
-
 import type { TemplateMetadata } from "@kaiwa/shared";
+import { prisma } from "../db/prisma.js";
 
-const candidateRoots = [
-  path.resolve(process.cwd(), "content/templates"),
-  path.resolve(process.cwd(), "../content/templates")
-];
-
-const templateRoot = candidateRoots.find((dir) => fs.existsSync(dir)) ?? candidateRoots[0];
-let cachedTemplates: TemplateMetadata[] | null = null;
-
-const readTemplateFiles = async () => {
-  let languages: string[] = [];
-  try {
-    languages = await fsPromises.readdir(templateRoot);
-  } catch {
-    return [];
-  }
-  const templates: TemplateMetadata[] = [];
-  for (const language of languages) {
-    const languageDir = path.join(templateRoot, language);
-    const levels = await fsPromises.readdir(languageDir);
-    for (const level of levels) {
-      const levelDir = path.join(languageDir, level);
-      const files = await fsPromises.readdir(levelDir);
-      for (const file of files) {
-        if (!file.endsWith(".json")) continue;
-        const filePath = path.join(levelDir, file);
-        const raw = await fsPromises.readFile(filePath, "utf-8");
-        const data = JSON.parse(raw) as TemplateMetadata;
-        templates.push(data);
-      }
-    }
-  }
-
-  return templates;
-};
-
-const ensureTemplates = async () => {
-  if (!cachedTemplates) {
-    cachedTemplates = await readTemplateFiles();
-  }
-  return cachedTemplates;
+const mapRow = (row: any): TemplateMetadata => {
+  const data = (row.data ?? {}) as any;
+  const starterTurns = Array.isArray(data?.starterTurns)
+    ? data.starterTurns
+    : typeof data?.startingPrompt === "string" && data.startingPrompt.length
+      ? [{ role: "user", text: data.startingPrompt }]
+      : [];
+  return {
+    id: row.id,
+    language: row.language,
+    level: row.level,
+    scenario: row.scenario,
+    summary: row.summary,
+    starterTurns,
+    vocabulary: Array.isArray(data?.vocabulary) ? data.vocabulary : [],
+  };
 };
 
 export const listTemplates = async (filters?: { language?: string; level?: string }) => {
-  const templates = await ensureTemplates();
-  return templates.filter((template) => {
-    if (filters?.language && template.language !== filters.language) return false;
-    if (filters?.level && template.level !== filters.level) return false;
-    return true;
+  const rows = await prisma.template.findMany({
+    where: {
+      language: filters?.language ?? undefined,
+      level: filters?.level ?? undefined,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 100,
   });
+  return rows.map(mapRow);
 };
 
 export const getTemplateById = async (id: string) => {
-  const templates = await ensureTemplates();
-  return templates.find((template) => template.id === id) ?? null;
+  const row = await prisma.template.findUnique({ where: { id } });
+  return row ? mapRow(row) : null;
 };

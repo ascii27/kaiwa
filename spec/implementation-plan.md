@@ -21,11 +21,20 @@
 ## Phase 2 – Feedback Intelligence & Personalization
 
 - Extend OpenAI integration for mistake detection, persona-driven responses, and level assessment (fine-tuned prompts + evaluation dataset).
-- Expand conversation templates to intermediate/advanced; enable scenario selection UI.
+- Move conversation templates/prompts into the database (no more filesystem JSON). Build CRUD endpoints and use DB-backed listing in the client scenario selector.
+- Seed intermediate/advanced templates into `Template` table and support persona/level filters.
 - Enhance side panel with grouping, mastery toggles, spaced-repetition scheduling.
 - Implement strictness slider logic impacting correction frequency/detail.
 - Add profile settings page for long-term preferences and learning goals.
 - Prototype fallback strategy (secondary provider or heuristic rules) for when OpenAI is unavailable; add health monitoring.
+
+Phase 2 DB-backed Templates – Tasks
+
+- Prisma: confirm `Template` model and add any needed fields (e.g., `level`, `scenario`, `summary`, `data`).
+- Migration: create/adjust schema and add a seed script to populate initial templates.
+- Server: repository + service for templates (create/update/list); replace filesystem loader with DB access.
+- API: `/templates` GET (filters: language, level), and admin-only POST/PUT.
+- Client: continue calling `/templates` but expect DB-backed results; remove any dependency on `/content` files.
 
 ## Phase 3 – Voice Interaction Foundation
 

@@ -80,9 +80,15 @@ export const generatePartnerResponse = async (input: {
     "OpenAI transmission",
   );
 
+  const tempByStrictness: Record<StrictnessLevel, number> = {
+    gentle: 0.3,
+    standard: 0.4,
+    strict: 0.5,
+  };
   const raw = await sendChatCompletion({
     systemPrompt,
     messages,
+    temperature: tempByStrictness[input.strictness] ?? 0.4,
   });
 
   return parsePartnerResponse(raw);

@@ -40,6 +40,24 @@ interface AppState {
   wsConnected: boolean;
   selectedTemplateId?: string;
   sessionSummary?: string;
+  // Admin authoring panel
+  showAdmin: boolean;
+  admin: {
+    mode: "edit" | "new";
+    selectedId?: string;
+    language: string;
+    level: "beginner" | "intermediate" | "advanced";
+    scenario: string;
+    startingPrompt: string;
+    status?: string;
+    error?: string;
+  };
+  adminMeta: {
+    templates: any[];
+    languages: string[];
+    levels: string[];
+    scenarios: { id: string; scenario: string }[];
+  };
 }
 
 class KaiwaApp {
@@ -81,6 +99,15 @@ class KaiwaApp {
       wsConnected: false,
       selectedTemplateId: undefined,
       sessionSummary: undefined,
+      showAdmin: false,
+      admin: {
+        mode: "edit",
+        language: "japanese",
+        level: "beginner",
+        scenario: "",
+        startingPrompt: "",
+      },
+      adminMeta: { templates: [], languages: [], levels: [], scenarios: [] },
     };
   }
 
@@ -99,6 +126,10 @@ class KaiwaApp {
         selectedTemplateId: data.templates[0]?.id,
         error: null,
       });
+      // Keep admin meta in sync if visible
+      if (this.state.showAdmin) {
+        await this.loadAdminMeta();
+      }
     } catch (error) {
       console.error(error);
       this.setState({ error: "Failed to load templates." });
@@ -182,6 +213,9 @@ class KaiwaApp {
       <div class="mb-4">
         ${this.renderSessionForm()}
       </div>
+      <div class="mb-4">
+        ${this.renderAdminPanel()}
+      </div>
       ${
         this.state.sessionId
           ? this.renderChatShell()
@@ -194,9 +228,106 @@ class KaiwaApp {
     `;
   }
 
+  private renderAdminPanel() {
+    return `
+      <div class="card border-0 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Admin Templates</span>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="toggle-admin" ${
+              this.state.showAdmin ? "checked" : ""
+            }>
+            <label class="form-check-label" for="toggle-admin">Show</label>
+          </div>
+        </div>
+        ${
+          this.state.showAdmin
+            ? `<div class="card-body">
+                ${this.state.admin.error ? `<div class="alert alert-danger">${this.state.admin.error}</div>` : ""}
+                ${this.state.admin.status ? `<div class="alert alert-success">${this.state.admin.status}</div>` : ""}
+                <form id="admin-form" class="row g-3">
+                  <div class="col-12 d-flex gap-3 align-items-center">
+                    <div class="btn-group" role="group">
+                      <input type="radio" class="btn-check" name="mode" id="mode-edit" value="edit" ${
+                        this.state.admin.mode === "edit" ? "checked" : ""
+                      }>
+                      <label class="btn btn-outline-secondary" for="mode-edit">Edit</label>
+                      <input type="radio" class="btn-check" name="mode" id="mode-new" value="new" ${
+                        this.state.admin.mode === "new" ? "checked" : ""
+                      }>
+                      <label class="btn btn-outline-secondary" for="mode-new">New</label>
+                    </div>
+                  </div>
+                  ${
+                    this.state.admin.mode === "edit"
+                      ? `
+                        <div class="col-md-4">
+                          <label class="form-label">Language</label>
+                          <select class="form-select" name="language">
+                            ${this.state.adminMeta.languages.map((l) => `<option value="${l}" ${l === this.state.admin.language ? "selected" : ""}>${l}</option>`).join("")}
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label">Level</label>
+                          <select class="form-select" name="level">
+                            ${this.state.adminMeta.levels.map((lv) => `<option value="${lv}" ${lv === this.state.admin.level ? "selected" : ""}>${lv}</option>`).join("")}
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label">Scenario</label>
+                          <select class="form-select" name="scenario">
+                            ${this.state.adminMeta.scenarios.map((s) => `<option value="${s.id}" ${s.scenario === this.state.admin.scenario ? "selected" : ""}>${s.scenario}</option>`).join("")}
+                          </select>
+                        </div>
+                        <div class="col-12">
+                          <button class="btn btn-outline-secondary" data-action="load" type="button">Load</button>
+                        </div>
+                      `
+                      : `
+                        <div class="col-md-4">
+                          <label class="form-label">Language</label>
+                          <select class="form-select" name="language">
+                            ${this.state.adminMeta.languages.map((l) => `<option value="${l}" ${l === this.state.admin.language ? "selected" : ""}>${l}</option>`).join("")}
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label">Level</label>
+                          <select class="form-select" name="level">
+                            ${["beginner", "intermediate", "advanced"].map((lv) => `<option value="${lv}" ${lv === this.state.admin.level ? "selected" : ""}>${lv}</option>`).join("")}
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label">Scenario</label>
+                          <input class="form-control" name="scenario" value="${escapeHtml(this.state.admin.scenario)}" />
+                        </div>
+                      `
+                  }
+                  <div class="col-12">
+                    <label class="form-label">Starting Prompt</label>
+                    <textarea class="form-control" name="startingPrompt" rows="4">${escapeHtml(this.state.admin.startingPrompt)}</textarea>
+                  </div>
+                  <div class="col-12 d-flex gap-2">
+                    ${this.state.admin.mode === "new" ? `<button class="btn btn-primary" data-action="create" type="button">Save New</button>` : `<button class="btn btn-primary" data-action="update" type="button">Save Changes</button>`}
+                  </div>
+                </form>
+              </div>`
+            : ""
+        }
+      </div>
+    `;
+  }
+
   private renderSessionForm() {
     return `
       <form id="session-form" class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">Level</label>
+          <select class="form-select" name="level" value="${this.state.level}">
+            <option value="beginner" ${this.state.level === "beginner" ? "selected" : ""}>Beginner</option>
+            <option value="intermediate" ${this.state.level === "intermediate" ? "selected" : ""}>Intermediate</option>
+            <option value="advanced" ${this.state.level === "advanced" ? "selected" : ""}>Advanced</option>
+          </select>
+        </div>
         <div class="col-md-3">
           <label class="form-label">Persona</label>
           <select class="form-select" name="persona" value="${this.state.persona}">
@@ -301,26 +432,37 @@ class KaiwaApp {
         <div class="side-panel">
           <h6 class="fw-bold">Corrections</h6>
           <div id="mistakes-panel">
-            ${
-              this.state.mistakes.length
-                ? this.state.mistakes
-                    .map(
-                      (mistake) => `
-                      <div class="mistake-item">
-                        <div class="d-flex justify-content-between">
-                          <span class="badge bg-secondary">${mistake.type.toLowerCase()}</span>
-                          <span class="badge bg-light text-dark">${mistake.severity}</span>
-                        </div>
-                        <p class="mb-1 mt-2">${escapeHtml(mistake.message)}</p>
-                        <p class="mb-0 text-success"><strong>Fix:</strong> ${escapeHtml(
-                          mistake.correction,
-                        )}</p>
+            ${(() => {
+              if (!this.state.mistakes.length) {
+                return `<p class="text-muted small mb-0">No mistakes yet. Keep speaking!</p>`;
+              }
+              const groups = new Map<string, { m: any; count: number }>();
+              for (const m of this.state.mistakes) {
+                const key = `${m.type}|${m.message}|${m.correction}`.toLowerCase();
+                const existing = groups.get(key);
+                if (existing) existing.count += 1;
+                else groups.set(key, { m, count: 1 });
+              }
+              return Array.from(groups.values())
+                .map(
+                  ({ m, count }) => `
+                  <div class="mistake-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <span class="badge bg-secondary">${m.type.toLowerCase()}</span>
+                        ${m.subcategory ? `<span class="badge bg-info ms-1">${escapeHtml(m.subcategory)}</span>` : ""}
                       </div>
-                    `,
-                    )
-                    .join("")
-                : `<p class="text-muted small mb-0">No mistakes yet. Keep speaking!</p>`
-            }
+                      <div>
+                        <span class="badge bg-light text-dark">${m.severity}</span>
+                        ${count > 1 ? `<span class="badge bg-warning text-dark ms-1">${count}×</span>` : ""}
+                      </div>
+                    </div>
+                    <p class="mb-1 mt-2">${escapeHtml(m.message)}</p>
+                    <p class="mb-0 text-success"><strong>Fix:</strong> ${escapeHtml(m.correction)}</p>
+                  </div>`,
+                )
+                .join("");
+            })()}
           </div>
           <hr />
           <h6 class="fw-bold">Vocabulary Bank</h6>
@@ -404,11 +546,26 @@ class KaiwaApp {
     sessionForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const formData = new FormData(sessionForm);
+      const level = (formData.get("level") as string) ?? this.state.level;
       const persona = (formData.get("persona") as string) ?? "encouraging";
       const strictness = (formData.get("strictness") as string) ?? "standard";
       const characterStyle = (formData.get("characterStyle") as string) ?? "kanji";
       const scenarioId = (formData.get("scenarioId") as string) || undefined;
+      if (level !== this.state.level) {
+        this.setState({ level });
+      }
       await this.startSession({ persona, strictness, characterStyle, scenarioId });
+    });
+
+    // Reload templates when level changes
+    const levelSelect = sessionForm?.querySelector(
+      'select[name="level"]',
+    ) as HTMLSelectElement | null;
+    levelSelect?.addEventListener("change", async (event) => {
+      const target = event.target as HTMLSelectElement;
+      const level = target.value as AppState["level"];
+      this.setState({ level, selectedTemplateId: undefined, templates: [] });
+      await this.loadTemplates();
     });
 
     const messageForm = document.getElementById("message-form") as HTMLFormElement | null;
@@ -438,6 +595,125 @@ class KaiwaApp {
       chatThread.removeEventListener("click", this.bubbleClickHandler);
       chatThread.addEventListener("click", this.bubbleClickHandler);
     }
+
+    // Admin bindings
+    const toggleAdmin = document.getElementById("toggle-admin") as HTMLInputElement | null;
+    toggleAdmin?.addEventListener("change", (e) => {
+      const checked = (e.target as HTMLInputElement).checked;
+      this.setState({
+        showAdmin: checked,
+        admin: { ...this.state.admin, status: undefined, error: undefined },
+      });
+      if (checked) {
+        this.loadAdminMeta();
+      }
+    });
+
+    const adminForm = document.getElementById("admin-form") as HTMLFormElement | null;
+    adminForm?.addEventListener("click", async (event) => {
+      const target = event.target as HTMLElement;
+      if (!(target instanceof HTMLButtonElement)) return;
+      const action = target.getAttribute("data-action");
+      const formData = new FormData(adminForm);
+      const language = String(formData.get("language") || "japanese").trim();
+      const level = String(formData.get("level") || "beginner").trim() as AppState["level"];
+      const scenarioField = String(formData.get("scenario") || "").trim();
+      const startingPrompt = String(formData.get("startingPrompt") || "");
+
+      const setAdmin = (patch: Partial<AppState["admin"]>) =>
+        this.setState({ admin: { ...this.state.admin, ...patch } });
+
+      if (!this.state.token) {
+        setAdmin({ error: "You must be logged in.", status: undefined });
+        return;
+      }
+
+      try {
+        if (action === "load") {
+          const selectedId = scenarioField; // in edit mode, scenario select holds id
+          const data = await api.getTemplate(selectedId);
+          const t = data.template as TemplateMetadata;
+          const userLine = t.starterTurns?.find((turn) => turn.role === "user")?.text ?? "";
+          setAdmin({
+            language: t.language,
+            level: t.level as AppState["level"],
+            scenario: t.scenario,
+            startingPrompt: userLine,
+            selectedId: t.id,
+            status: "Loaded.",
+            error: undefined,
+          });
+          return;
+        }
+
+        if (action === "create") {
+          const payload = { language, level, scenario: scenarioField, startingPrompt };
+          await api.createTemplate(this.state.token, payload);
+          setAdmin({ status: "Created.", error: undefined });
+          await this.loadAdminMeta();
+        } else if (action === "update") {
+          const id = this.state.admin.selectedId;
+          if (!id) {
+            setAdmin({ error: "Load a template to update.", status: undefined });
+            return;
+          }
+          const payload = { language, level, scenario: this.state.admin.scenario, startingPrompt };
+          await api.updateTemplate(this.state.token, id, payload);
+          setAdmin({ status: "Updated.", error: undefined });
+          await this.loadAdminMeta();
+        }
+      } catch (error) {
+        setAdmin({ error: (error as Error).message, status: undefined });
+      }
+    });
+
+    adminForm?.addEventListener("change", (event) => {
+      const target = event.target as HTMLInputElement | HTMLSelectElement | null;
+      if (!target) return;
+      const name = target.getAttribute("name");
+      if (name === "mode") {
+        const mode = (target as HTMLInputElement).value as "edit" | "new";
+        this.setState({
+          admin: { ...this.state.admin, mode, status: undefined, error: undefined },
+        });
+        return;
+      }
+      if (name === "language") {
+        const language = (target as HTMLSelectElement).value;
+        const templates = this.state.adminMeta.templates;
+        const levels = Array.from(
+          new Set(templates.filter((t: any) => t.language === language).map((t: any) => t.level)),
+        );
+        const level = (levels[0] as AppState["level"]) || "beginner";
+        const scenarios = templates
+          .filter((t: any) => t.language === language && t.level === level)
+          .map((t: any) => ({ id: t.id, scenario: t.scenario }));
+        this.setState({
+          admin: { ...this.state.admin, language, level, scenario: "", selectedId: undefined },
+          adminMeta: { ...this.state.adminMeta, levels, scenarios },
+        });
+        return;
+      }
+      if (name === "level") {
+        const level = (target as HTMLSelectElement).value as AppState["level"];
+        const templates = this.state.adminMeta.templates;
+        const scenarios = templates
+          .filter((t: any) => t.language === this.state.admin.language && t.level === level)
+          .map((t: any) => ({ id: t.id, scenario: t.scenario }));
+        this.setState({
+          admin: { ...this.state.admin, level, scenario: "", selectedId: undefined },
+          adminMeta: { ...this.state.adminMeta, scenarios },
+        });
+        return;
+      }
+      if (name === "scenario" && this.state.admin.mode === "edit") {
+        const selectedId = (target as HTMLSelectElement).value;
+        const selected = this.state.adminMeta.scenarios.find((s) => s.id === selectedId);
+        this.setState({
+          admin: { ...this.state.admin, selectedId, scenario: selected?.scenario || "" },
+        });
+      }
+    });
   }
 
   private toggleTranslation(index: number) {
@@ -453,6 +729,33 @@ class KaiwaApp {
     const thread = document.getElementById("chat-thread");
     if (thread) {
       thread.scrollTop = thread.scrollHeight;
+    }
+  }
+
+  private async loadAdminMeta() {
+    try {
+      const all = await api.listTemplates();
+      const templates: any[] = all.templates ?? [];
+      const fallbackLangs = ["japanese", "english", "spanish", "korean", "chinese"];
+      const languages = Array.from(
+        new Set([...fallbackLangs, ...templates.map((t: any) => t.language)]),
+      );
+      const levels = Array.from(
+        new Set(
+          templates
+            .filter((t: any) => t.language === this.state.admin.language)
+            .map((t: any) => t.level),
+        ),
+      );
+      const scenarios = templates
+        .filter(
+          (t: any) =>
+            t.language === this.state.admin.language && t.level === this.state.admin.level,
+        )
+        .map((t: any) => ({ id: t.id, scenario: t.scenario }));
+      this.setState({ adminMeta: { templates, languages, levels, scenarios } });
+    } catch (error) {
+      this.setState({ admin: { ...this.state.admin, error: (error as Error).message } });
     }
   }
 

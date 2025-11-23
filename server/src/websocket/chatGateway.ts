@@ -189,5 +189,13 @@ const buildMistakes = async (sessionId: string, turnId: string, text: string, la
     message: finding.message,
     correction: finding.correction,
   }));
-  return saveMistakes(inputs);
+  const saved = await saveMistakes(inputs);
+  // enrich with analysis-only fields for UI (not persisted yet)
+  return saved.map((row, idx) => ({
+    ...row,
+    subcategory: findings[idx]?.subcategory,
+    severityScore: findings[idx]?.severityScore,
+    recommendedDrills: findings[idx]?.recommendedDrills,
+    hash: `${row.type}|${row.message}|${row.correction}`.toLowerCase(),
+  }));
 };

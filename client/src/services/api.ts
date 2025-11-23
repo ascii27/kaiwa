@@ -39,6 +39,11 @@ export const api = {
     }),
   listTemplates: (language = "japanese", level = "beginner") =>
     apiFetch(`/templates?language=${language}&level=${level}`),
+  getTemplate: (id: string) => apiFetch(`/templates/${id}`),
+  createTemplate: (token: string, body: any) =>
+    apiFetch(`/templates`, { method: "POST", token, body: JSON.stringify(body) }),
+  updateTemplate: (token: string, id: string, body: any) =>
+    apiFetch(`/templates/${id}`, { method: "PUT", token, body: JSON.stringify(body) }),
   startSession: (
     token: string,
     body: {
