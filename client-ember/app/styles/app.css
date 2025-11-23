@@ -97,7 +97,7 @@ main {
   border: 1px solid var(--kaiwa-border);
   border-radius: 1rem;
   padding: 1rem;
-  max-height: 65vh;
+  height: 65vh;
   overflow-y: auto;
 }
 
