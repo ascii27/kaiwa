@@ -37,7 +37,7 @@
       <div class="col-lg-8">
         {{#if this.error}}<div class="alert alert-danger">{{this.error}}</div>{{/if}}
         {{#if this.status}}<div class="alert alert-success">{{this.status}}</div>{{/if}}
-        <form class="vstack gap-2" {{on "submit" this.saveEditor}}>
+        <form class="vstack gap-2" onsubmit="return false;">
           <div class="row g-2">
             <div class="col-md-4">
               <label class="form-label">Language</label>
@@ -61,7 +61,7 @@
             <textarea class="form-control" rows="6" {{on "input" (fn this.onField "startingPrompt")}}>{{this.editor.startingPrompt}}</textarea>
           </div>
           <div>
-            <button class="btn btn-primary" disabled={{if this.canSave false true}} type="submit">{{if this.isNew 'Save New' 'Save Changes'}}</button>
+            <button class="btn btn-primary" disabled={{if this.canSave false true}} type="button" {{on "click" this.saveEditor}}>{{if this.isNew 'Save New' 'Save Changes'}}</button>
           </div>
         </form>
       </div>
