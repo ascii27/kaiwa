@@ -2,13 +2,15 @@ export type StrictnessLevel = "gentle" | "standard" | "strict";
 
 export type PersonaTone = "encouraging" | "neutral" | "blunt" | "humorous";
 
+export type CharacterStyle = "kanji" | "hiragana" | "romaji";
+
 export interface UserSettings {
   id: string;
   userId: string;
   targetLanguage: string;
   persona: PersonaTone;
   strictness: StrictnessLevel;
-  renderMode: "kanji" | "hiragana";
+  renderMode: CharacterStyle;
 }
 
 export interface User {
@@ -26,6 +28,7 @@ export interface Session {
   level: "beginner" | "intermediate" | "advanced";
   persona: PersonaTone;
   strictness: StrictnessLevel;
+  characterStyle: CharacterStyle;
   scenarioId?: string;
   status: "active" | "ended";
   createdAt: Date;
@@ -37,6 +40,7 @@ export interface Turn {
   sessionId: string;
   role: "user" | "ai";
   text: string;
+  translation?: string | null;
   createdAt: Date;
 }
 

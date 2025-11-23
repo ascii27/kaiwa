@@ -14,7 +14,7 @@ const apiFetch = async (path: string, options: RequestOptions = {}) => {
 
   const response = await fetch(`${BASE_URL}${path}`, {
     ...rest,
-    headers
+    headers,
   });
 
   const data = await response.json().catch(() => ({}));
@@ -30,12 +30,12 @@ export const api = {
   signup: (email: string, password: string) =>
     apiFetch("/auth/signup", {
       method: "POST",
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password }),
     }),
   login: (email: string, password: string) =>
     apiFetch("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password }),
     }),
   listTemplates: (language = "japanese", level = "beginner") =>
     apiFetch(`/templates?language=${language}&level=${level}`),
@@ -46,22 +46,23 @@ export const api = {
       level: string;
       persona: string;
       strictness: string;
+      characterStyle: string;
       scenarioId?: string;
-    }
+    },
   ) =>
     apiFetch("/sessions", {
       method: "POST",
       body: JSON.stringify(body),
-      token
+      token,
     }),
   getSession: (token: string, id: string) =>
     apiFetch(`/sessions/${id}`, {
-      token
+      token,
     }),
   addVocabulary: (token: string, sessionId: string, vocab: any) =>
     apiFetch(`/sessions/${sessionId}/vocabulary`, {
       method: "POST",
       body: JSON.stringify(vocab),
-      token
-    })
+      token,
+    }),
 };

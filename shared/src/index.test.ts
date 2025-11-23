@@ -11,9 +11,10 @@ describe("shared types", () => {
       level: "beginner",
       persona: "encouraging",
       strictness: "gentle",
+      characterStyle: "kanji",
       status: "active",
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     expect(session.level).toBe("beginner");

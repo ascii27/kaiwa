@@ -25,6 +25,12 @@ enum SessionStatus {
   ENDED
 }
 
+enum CharacterStyle {
+  KANJI
+  HIRAGANA
+  ROMAJI
+}
+
 enum MistakeType {
   GRAMMAR
   PRONUNCIATION
@@ -65,6 +71,7 @@ model Session {
   scenarioId String?
   persona    PersonaTone
   strictness StrictnessLevel
+  characterStyle CharacterStyle @default(KANJI)
   status     SessionStatus   @default(ACTIVE)
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
@@ -79,6 +86,7 @@ model Turn {
   sessionId String
   role      String
   text      String
+  translation String?
   createdAt DateTime @default(now())
   mistakes  Mistake[]
 }

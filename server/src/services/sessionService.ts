@@ -1,5 +1,5 @@
 import { prisma } from "../db/prisma.js";
-import type { PersonaTone, StrictnessLevel } from "@kaiwa/shared";
+import type { CharacterStyle, PersonaTone, StrictnessLevel } from "@kaiwa/shared";
 
 export interface StartSessionInput {
   userId: string;
@@ -7,6 +7,7 @@ export interface StartSessionInput {
   level: "beginner" | "intermediate" | "advanced";
   persona: PersonaTone;
   strictness: StrictnessLevel;
+  characterStyle: CharacterStyle;
   scenarioId?: string;
 }
 
@@ -18,8 +19,9 @@ export const startSession = async (input: StartSessionInput) => {
       level: input.level,
       persona: input.persona.toUpperCase() as any,
       strictness: input.strictness.toUpperCase() as any,
-      scenarioId: input.scenarioId ?? null
-    }
+      characterStyle: input.characterStyle.toUpperCase() as any,
+      scenarioId: input.scenarioId ?? null,
+    },
   });
 };
 
@@ -28,11 +30,11 @@ export const getSessionById = async (id: string, userId: string) => {
     where: { id, userId },
     include: {
       turns: {
-        orderBy: { createdAt: "asc" }
+        orderBy: { createdAt: "asc" },
       },
       mistakes: true,
-      vocabulary: true
-    }
+      vocabulary: true,
+    },
   });
 };
 
@@ -40,24 +42,30 @@ export const listSessionsForUser = async (userId: string) => {
   return prisma.session.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
-    take: 20
+    take: 20,
   });
 };
 
 export const endSession = async (id: string, userId: string) => {
   return prisma.session.updateMany({
     where: { id, userId },
-    data: { status: "ENDED" }
+    data: { status: "ENDED" },
   });
 };
 
-export const saveTurn = async (sessionId: string, role: "user" | "ai", text: string) => {
+export const saveTurn = async (
+  sessionId: string,
+  role: "user" | "ai",
+  text: string,
+  translation?: string | null,
+) => {
   return prisma.turn.create({
     data: {
       sessionId,
       role,
-      text
-    }
+      text,
+      translation: translation ?? null,
+    },
   });
 };
 
@@ -65,7 +73,7 @@ export const getRecentTurns = async (sessionId: string, limit = 12) => {
   const turns = await prisma.turn.findMany({
     where: { sessionId },
     orderBy: { createdAt: "desc" },
-    take: limit
+    take: limit,
   });
 
   return turns.reverse();
@@ -91,10 +99,10 @@ export const saveMistakes = async (mistakes: MistakeInput[]) => {
           type: mistake.type.toUpperCase() as any,
           severity: mistake.severity,
           message: mistake.message,
-          correction: mistake.correction
-        }
-      })
-    )
+          correction: mistake.correction,
+        },
+      }),
+    ),
   );
 
   return created;
@@ -116,10 +124,10 @@ export const saveVocabulary = async (items: VocabularyInput[]) => {
           sessionId: item.sessionId,
           phrase: item.phrase,
           translation: item.translation,
-          context: item.context
-        }
-      })
-    )
+          context: item.context,
+        },
+      }),
+    ),
   );
 
   return created;

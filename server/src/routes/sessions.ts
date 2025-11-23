@@ -7,7 +7,7 @@ import {
   getSessionById,
   listSessionsForUser,
   saveVocabulary,
-  startSession
+  startSession,
 } from "../services/sessionService.js";
 import { getTemplateById } from "../templates/templateService.js";
 
@@ -16,13 +16,14 @@ const startSessionSchema = z.object({
   level: z.enum(["beginner", "intermediate", "advanced"]).default("beginner"),
   persona: z.enum(["encouraging", "neutral", "blunt", "humorous"]).default("encouraging"),
   strictness: z.enum(["gentle", "standard", "strict"]).default("standard"),
-  scenarioId: z.string().optional()
+  characterStyle: z.enum(["kanji", "hiragana", "romaji"]).default("kanji"),
+  scenarioId: z.string().optional(),
 });
 
 const vocabularySchema = z.object({
   phrase: z.string().min(1),
   translation: z.string().min(1),
-  context: z.string().min(1)
+  context: z.string().min(1),
 });
 
 export const sessionRouter = Router();
@@ -33,7 +34,7 @@ sessionRouter.post("/", async (req, res) => {
   const body = startSessionSchema.parse(req.body);
   const session = await startSession({
     userId: req.userId!,
-    ...body
+    ...body,
   });
 
   let template = null;
@@ -45,8 +46,8 @@ sessionRouter.post("/", async (req, res) => {
           sessionId: session.id,
           phrase: item.phrase,
           translation: item.translation,
-          context: template.summary
-        }))
+          context: template.summary,
+        })),
       );
     }
   }
@@ -83,8 +84,8 @@ sessionRouter.post("/:id/vocabulary", async (req, res) => {
       sessionId: req.params.id,
       phrase: payload.phrase,
       translation: payload.translation,
-      context: payload.context
-    }
+      context: payload.context,
+    },
   ]);
 
   res.status(201).json({ vocabulary: vocab });

@@ -8,7 +8,7 @@ export class ChatSocket {
 
   constructor(
     private token: string,
-    private sessionId: string
+    private sessionId: string,
   ) {}
 
   connect() {
@@ -52,8 +52,18 @@ export class ChatSocket {
     this.ws?.send(
       JSON.stringify({
         type: "user_message",
-        payload: { text }
-      })
+        payload: { text },
+      }),
+    );
+  }
+
+  sendSessionPrompt(text: string) {
+    if (!text) return;
+    this.ws?.send(
+      JSON.stringify({
+        type: "session_prompt",
+        payload: { text },
+      }),
     );
   }
 

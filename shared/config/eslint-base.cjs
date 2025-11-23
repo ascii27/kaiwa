@@ -19,6 +19,7 @@ module.exports = {
     "prettier"
   ],
   rules: {
+    "import/no-unresolved": "off",
     "unused-imports/no-unused-imports": "error",
     "@typescript-eslint/no-explicit-any": "off"
   }

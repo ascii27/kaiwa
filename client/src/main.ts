@@ -9,6 +9,8 @@ import { ChatSocket } from "./services/socket";
 type Message = {
   role: "user" | "ai";
   text: string;
+  translation?: string | null;
+  showTranslation?: boolean;
 };
 
 const escapeHtml = (value: string) =>
@@ -32,6 +34,7 @@ interface AppState {
   strictness: string;
   level: string;
   language: string;
+  characterStyle: string;
   isStartingSession: boolean;
   isAiResponding: boolean;
   wsConnected: boolean;
@@ -43,6 +46,18 @@ class KaiwaApp {
   private state: AppState;
   private root: HTMLElement;
   private socket: ChatSocket | null = null;
+  private bubbleClickHandler = (event: Event) => {
+    const target = event.target as HTMLElement;
+    const bubble = target.closest(".message-bubble.ai") as HTMLElement | null;
+    if (!bubble) {
+      return;
+    }
+    const indexAttr = bubble.getAttribute("data-index");
+    if (!indexAttr) return;
+    const index = Number.parseInt(indexAttr, 10);
+    if (Number.isNaN(index)) return;
+    this.toggleTranslation(index);
+  };
 
   constructor(root: HTMLElement) {
     const storedToken = localStorage.getItem("kaiwa_token");
@@ -60,11 +75,12 @@ class KaiwaApp {
       strictness: "standard",
       level: "beginner",
       language: "japanese",
+      characterStyle: "kanji",
       isStartingSession: false,
       isAiResponding: false,
       wsConnected: false,
       selectedTemplateId: undefined,
-      sessionSummary: undefined
+      sessionSummary: undefined,
     };
   }
 
@@ -81,7 +97,7 @@ class KaiwaApp {
       this.setState({
         templates: data.templates,
         selectedTemplateId: data.templates[0]?.id,
-        error: null
+        error: null,
       });
     } catch (error) {
       console.error(error);
@@ -198,7 +214,15 @@ class KaiwaApp {
             <option value="strict" ${this.state.strictness === "strict" ? "selected" : ""}>Strict</option>
           </select>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
+          <label class="form-label">Output Script</label>
+          <select class="form-select" name="characterStyle" value="${this.state.characterStyle}">
+            <option value="kanji" ${this.state.characterStyle === "kanji" ? "selected" : ""}>Kanji + Kana</option>
+            <option value="hiragana" ${this.state.characterStyle === "hiragana" ? "selected" : ""}>Hiragana only</option>
+            <option value="romaji" ${this.state.characterStyle === "romaji" ? "selected" : ""}>Romaji</option>
+          </select>
+        </div>
+        <div class="col-md-3">
           <label class="form-label">Scenario</label>
           <select class="form-select" name="scenarioId">
             ${(this.state.templates || [])
@@ -206,12 +230,12 @@ class KaiwaApp {
                 (template) =>
                   `<option value="${template.id}" ${
                     template.id === this.state.selectedTemplateId ? "selected" : ""
-                  }>${template.summary}</option>`
+                  }>${template.summary}</option>`,
               )
               .join("")}
           </select>
         </div>
-        <div class="col-md-2 d-grid">
+        <div class="col-12 col-lg-12 col-xl-12 d-grid">
           <button class="btn btn-primary" ${this.state.isStartingSession ? "disabled" : ""}>
             ${this.state.isStartingSession ? "Starting..." : "Start Session"}
           </button>
@@ -234,11 +258,27 @@ class KaiwaApp {
           <div class="chat-thread" id="chat-thread">
             ${this.state.messages
               .map(
-                (message) => `
-                <div class="message-bubble ${message.role}">
+                (message, index) => `
+                <div class="message-bubble ${message.role}" ${
+                  message.role === "ai" ? `data-index="${index}"` : ""
+                }>
                   ${escapeHtml(message.text)}
+                  ${
+                    message.role === "ai" && message.translation
+                      ? `<div class="translation-hint text-muted small mt-2">${
+                          message.showTranslation
+                            ? "Translation shown below"
+                            : "Click bubble to view translation"
+                        }</div>`
+                      : ""
+                  }
+                  ${
+                    message.role === "ai" && message.translation && message.showTranslation
+                      ? `<div class="translation-output mt-2 text-muted">${escapeHtml(message.translation)}</div>`
+                      : ""
+                  }
                 </div>
-              `
+              `,
               )
               .join("")}
             ${
@@ -273,10 +313,10 @@ class KaiwaApp {
                         </div>
                         <p class="mb-1 mt-2">${escapeHtml(mistake.message)}</p>
                         <p class="mb-0 text-success"><strong>Fix:</strong> ${escapeHtml(
-                          mistake.correction
+                          mistake.correction,
                         )}</p>
                       </div>
-                    `
+                    `,
                     )
                     .join("")
                 : `<p class="text-muted small mb-0">No mistakes yet. Keep speaking!</p>`
@@ -295,7 +335,7 @@ class KaiwaApp {
                           <div class="text-muted small">${escapeHtml(vocab.translation)}</div>
                           <div class="small mt-2">${escapeHtml(vocab.context)}</div>
                         </div>
-                      `
+                      `,
                     )
                     .join("")
                 : `<p class="text-muted small mb-2">Vocabulary you add will appear here.</p>`
@@ -326,7 +366,10 @@ class KaiwaApp {
       event.preventDefault();
       const formData = new FormData(signupForm);
       try {
-        const data = await api.signup(formData.get("email") as string, formData.get("password") as string);
+        const data = await api.signup(
+          formData.get("email") as string,
+          formData.get("password") as string,
+        );
         localStorage.setItem("kaiwa_token", data.token);
         this.setState({ token: data.token, userEmail: data.user.email, error: null });
         await this.loadTemplates();
@@ -340,7 +383,10 @@ class KaiwaApp {
       event.preventDefault();
       const formData = new FormData(loginForm);
       try {
-        const data = await api.login(formData.get("email") as string, formData.get("password") as string);
+        const data = await api.login(
+          formData.get("email") as string,
+          formData.get("password") as string,
+        );
         localStorage.setItem("kaiwa_token", data.token);
         this.setState({ token: data.token, userEmail: data.user.email, error: null });
         await this.loadTemplates();
@@ -360,8 +406,9 @@ class KaiwaApp {
       const formData = new FormData(sessionForm);
       const persona = (formData.get("persona") as string) ?? "encouraging";
       const strictness = (formData.get("strictness") as string) ?? "standard";
+      const characterStyle = (formData.get("characterStyle") as string) ?? "kanji";
       const scenarioId = (formData.get("scenarioId") as string) || undefined;
-      await this.startSession({ persona, strictness, scenarioId });
+      await this.startSession({ persona, strictness, characterStyle, scenarioId });
     });
 
     const messageForm = document.getElementById("message-form") as HTMLFormElement | null;
@@ -381,10 +428,25 @@ class KaiwaApp {
       await this.saveVocabulary({
         phrase: formData.get("phrase"),
         translation: formData.get("translation"),
-        context: formData.get("context")
+        context: formData.get("context"),
       });
       vocabForm.reset();
     });
+
+    const chatThread = document.getElementById("chat-thread");
+    if (chatThread) {
+      chatThread.removeEventListener("click", this.bubbleClickHandler);
+      chatThread.addEventListener("click", this.bubbleClickHandler);
+    }
+  }
+
+  private toggleTranslation(index: number) {
+    const messages = this.state.messages.map((message, idx) =>
+      idx === index && message.role === "ai" && message.translation
+        ? { ...message, showTranslation: !message.showTranslation }
+        : message,
+    );
+    this.setState({ messages });
   }
 
   private scrollChatToBottom() {
@@ -397,10 +459,12 @@ class KaiwaApp {
   private async startSession({
     persona,
     strictness,
-    scenarioId
+    characterStyle,
+    scenarioId,
   }: {
     persona: string;
     strictness: string;
+    characterStyle: string;
     scenarioId?: string;
   }) {
     if (!this.state.token) return;
@@ -411,39 +475,36 @@ class KaiwaApp {
         level: this.state.level,
         persona,
         strictness,
-        scenarioId
+        characterStyle,
+        scenarioId,
       });
 
-      const starterMessages =
-        template?.starterTurns?.map((turn: { role: "user" | "ai"; text: string }) => ({
-          role: turn.role,
-          text: turn.text
-        })) ?? [];
-
+      const initialPrompt = this.buildInitialPrompt(template);
       this.setState({
         sessionId: session.id,
         persona,
         strictness,
-        messages: starterMessages,
+        characterStyle,
+        messages: [],
         mistakes: [],
         vocabulary: [],
         sessionSummary: template?.summary,
         selectedTemplateId: scenarioId,
         wsConnected: false,
-        isAiResponding: false
+        isAiResponding: false,
       });
 
       try {
         const sessionData = await api.getSession(this.state.token, session.id);
         this.setState({
-          vocabulary: sessionData.session?.vocabulary ?? []
+          vocabulary: sessionData.session?.vocabulary ?? [],
         });
       } catch (fetchError) {
         console.error(fetchError);
         this.setState({ error: "Session started, but failed to sync vocabulary." });
       }
 
-      await this.connectSocket(session.id);
+      await this.connectSocket(session.id, initialPrompt);
     } catch (error) {
       this.setState({ error: (error as Error).message });
     } finally {
@@ -451,20 +512,26 @@ class KaiwaApp {
     }
   }
 
-  private async connectSocket(sessionId: string) {
+  private async connectSocket(sessionId: string, initialPrompt?: string) {
     if (!this.state.token) return;
     this.socket?.close();
     this.socket = new ChatSocket(this.state.token, sessionId);
     this.socket.on("chat_message", (payload) => {
       this.setState({
-        messages: [...this.state.messages, { role: "ai", text: payload.text }],
-        isAiResponding: false
+        messages: [
+          ...this.state.messages,
+          { role: "ai", text: payload.text, translation: payload.translation ?? null },
+        ],
+        isAiResponding: false,
       });
     });
     this.socket.on("mistakes_update", (payload) => {
       const normalized: Mistake[] = (payload ?? []).map((mistake: any) => ({
         ...mistake,
-        type: typeof mistake.type === "string" ? ((mistake.type as string).toLowerCase() as Mistake["type"]) : mistake.type
+        type:
+          typeof mistake.type === "string"
+            ? ((mistake.type as string).toLowerCase() as Mistake["type"])
+            : mistake.type,
       }));
       this.setState({ mistakes: [...normalized, ...this.state.mistakes] });
     });
@@ -485,6 +552,9 @@ class KaiwaApp {
     try {
       await this.socket.connect();
       this.setState({ wsConnected: true });
+      if (initialPrompt) {
+        this.socket.sendSessionPrompt(initialPrompt);
+      }
     } catch (error) {
       this.setState({ error: "Unable to connect to chat gateway." });
     }
@@ -497,9 +567,9 @@ class KaiwaApp {
     }
     this.socket.sendUserMessage(text);
     this.setState({
-      messages: [...this.state.messages, { role: "user", text }],
+      messages: [...this.state.messages, { role: "user", text, translation: null }],
       isAiResponding: true,
-      error: null
+      error: null,
     });
   }
 
@@ -513,12 +583,12 @@ class KaiwaApp {
       const payload = {
         phrase: String(vocab.phrase ?? ""),
         translation: String(vocab.translation ?? ""),
-        context: String(vocab.context ?? "")
+        context: String(vocab.context ?? ""),
       };
       const result = await api.addVocabulary(this.state.token, this.state.sessionId, {
         phrase: payload.phrase,
         translation: payload.translation,
-        context: payload.context
+        context: payload.context,
       });
       this.setState({ vocabulary: [...result.vocabulary, ...this.state.vocabulary], error: null });
     } catch (error) {
@@ -537,8 +607,20 @@ class KaiwaApp {
       mistakes: [],
       vocabulary: [],
       wsConnected: false,
-      selectedTemplateId: undefined
+      selectedTemplateId: undefined,
+      characterStyle: "kanji",
     });
+  }
+
+  private buildInitialPrompt(template: TemplateMetadata | null | undefined) {
+    if (!template) {
+      return "Please begin a casual introduction in Japanese.";
+    }
+    const userLine = template.starterTurns?.find((turn) => turn.role === "user")?.text;
+    if (userLine) {
+      return userLine;
+    }
+    return `Please start a conversation about: ${template.summary}`;
   }
 }
 
