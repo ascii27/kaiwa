@@ -5,7 +5,7 @@
   "scripts": {
     "build": "ember build",
     "lint": "eslint \"app/**/*.{js,ts,gjs,gts}\"",
-    "start": "ember serve --proxy http://localhost:4000",
+    "start": "ember serve",
     "test": "ember test"
   },
   "dependencies": {

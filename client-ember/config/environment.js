@@ -11,16 +11,10 @@ module.exports = function (environment) {
     },
     APP: {
       LOG_LEVEL: process.env.LOG_LEVEL || "info",
-      API_URL: process.env.VITE_API_URL || "",
-      WS_URL: process.env.VITE_WS_URL || "",
+      API_URL: process.env.VITE_API_URL || "http://localhost:4000",
+      WS_URL: process.env.VITE_WS_URL || "ws://localhost:4000",
     },
   };
-
-  // In development, prefer proxying API and WS via Ember CLI to avoid CORS
-  if (environment === 'development') {
-    ENV.APP.API_URL = '';
-    ENV.APP.WS_URL = '';
-  }
 
   return ENV;
 };
