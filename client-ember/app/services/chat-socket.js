@@ -2,7 +2,11 @@ import Service from '@ember/service';
 import { inject as service } from '@ember/service';
 import config from 'client-ember/config/environment';
 
-const WS_BASE = (config.APP.WS_URL || 'ws://localhost:4000');
+function computeWsBase() {
+  if (config.APP.WS_URL) return config.APP.WS_URL;
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${protocol}://${window.location.host}`;
+}
 
 export default class ChatSocketService extends Service {
   @service logger;
@@ -17,7 +21,8 @@ export default class ChatSocketService extends Service {
 
   connect(token, sessionId) {
     return new Promise((resolve, reject) => {
-      const url = `${WS_BASE}/ws/chat?token=${token}&sessionId=${sessionId}`;
+      const base = computeWsBase();
+      const url = `${base}/ws/chat?token=${token}&sessionId=${sessionId}`;
       this.logger.info('ws.connect', { url });
       this.ws = new WebSocket(url);
       this.ws.onopen = () => resolve();
