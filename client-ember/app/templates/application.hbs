@@ -1,5 +1,4 @@
-<div class="ember-view">
-  <div class="app-shell {{if this.sidebarCollapsed 'is-collapsed'}}">
+<div class="app-shell {{if this.sidebarCollapsed 'is-collapsed'}}">
   <UiSideNav
     @collapsed={{this.sidebarCollapsed}}
     @onToggle={{this.toggleSidebar}}
@@ -15,11 +14,10 @@
           <span class="me-3 small text-muted">{{this.session.userEmail}}</span>
           <button type="button" class="btn btn-outline-secondary btn-sm" {{on "click" this.logout}}>Logout</button>
         {{else}}
-          {{#link-to "auth" class="btn btn-outline-primary btn-sm"}}Log In{{/link-to}}
+          <LinkTo @route="auth" class="btn btn-outline-primary btn-sm">Log In</LinkTo>
         {{/if}}
       </div>
     </div>
     {{outlet}}
   </main>
-</div>
 </div>
