@@ -5,6 +5,13 @@ export default class ConversationRoute extends Route {
   @service api;
   @service logger;
   @service settings;
+  @service session;
+
+  beforeModel() {
+    if (!this.session.token) {
+      this.replaceWith('auth');
+    }
+  }
 
   async model() {
     this.logger.info('route.enter', { route: 'conversation' });

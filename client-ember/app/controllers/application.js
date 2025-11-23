@@ -5,6 +5,7 @@ import { inject as service } from '@ember/service';
 
 export default class ApplicationController extends Controller {
   @service router;
+  @service session;
   @tracked sidebarCollapsed = false;
 
   constructor() {
@@ -22,5 +23,10 @@ export default class ApplicationController extends Controller {
     localStorage.setItem('kaiwa_sidebar_collapsed', String(this.sidebarCollapsed));
     // eslint-disable-next-line no-console
     console.log('[ui] toggle sidebar', { collapsed: this.sidebarCollapsed });
+  }
+
+  @action logout() {
+    this.session.logout();
+    this.router.transitionTo('auth');
   }
 }
