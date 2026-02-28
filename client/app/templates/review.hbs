@@ -3,16 +3,23 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2 class="h5 mb-0">Review</h2>
       {{#unless this.isDone}}
-        <span class="text-muted small">{{this.currentIndex}} / {{this.items.length}}</span>
+        <span class="text-muted small">{{this.currentNumber}} / {{this.items.length}}</span>
       {{/unless}}
     </div>
 
-    {{#if this.isDone}}
+    {{#if this.roundComplete}}
+      <div class="text-center py-5">
+        <div class="fs-1 mb-3">🎉</div>
+        <p class="fw-semibold mb-1">Round complete!</p>
+        <p class="text-muted small">You've reviewed all {{this.items.length}} items.</p>
+        <button class="btn btn-outline-primary btn-sm mt-3" {{on "click" this.startNewRound}}>Start new round</button>
+      </div>
+    {{else if this.noItemsDue}}
       <div class="text-center py-5">
         <div class="fs-1 mb-3">✓</div>
         <p class="fw-semibold mb-1">All caught up!</p>
         <p class="text-muted small">No vocabulary items are due right now. Come back later.</p>
-        <button class="btn btn-outline-primary btn-sm mt-3" {{on "click" this.restart}}>Check again</button>
+        <button class="btn btn-outline-secondary btn-sm mt-3" {{on "click" this.startNewRound}}>Check again</button>
       </div>
     {{else}}
       <div class="flashcard">

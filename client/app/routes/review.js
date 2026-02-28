@@ -28,5 +28,7 @@ export default class ReviewRoute extends Route {
     controller.items = model.items;
     controller.currentIndex = 0;
     controller.showAnswer = false;
+    controller.roundComplete = false;
+    controller.noItemsDue = model.items.length === 0;
   }
 }

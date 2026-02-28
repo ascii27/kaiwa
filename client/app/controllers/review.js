@@ -11,13 +11,19 @@ export default class ReviewController extends Controller {
   @tracked items = [];
   @tracked currentIndex = 0;
   @tracked showAnswer = false;
+  @tracked roundComplete = false;
+  @tracked noItemsDue = false;
 
   get currentItem() {
     return this.items[this.currentIndex];
   }
 
+  get currentNumber() {
+    return this.currentIndex + 1;
+  }
+
   get isDone() {
-    return this.currentIndex >= this.items.length;
+    return this.roundComplete || this.noItemsDue;
   }
 
   @action reveal() {
@@ -32,19 +38,29 @@ export default class ReviewController extends Controller {
     } catch (err) {
       this.logger.warn("review.grade_failed", { message: err.message });
     }
-    this.currentIndex = this.currentIndex + 1;
+    const nextIndex = this.currentIndex + 1;
+    this.currentIndex = nextIndex;
     this.showAnswer = false;
+    if (nextIndex >= this.items.length) {
+      this.roundComplete = true;
+    }
   }
 
-  @action async restart() {
+  @action async startNewRound() {
+    this.roundComplete = false;
+    this.noItemsDue = false;
+    this.currentIndex = 0;
+    this.showAnswer = false;
     try {
       const { items } = await this.api.getDueVocab(this.session.token);
       this.items = items ?? [];
+      if (this.items.length === 0) {
+        this.noItemsDue = true;
+      }
     } catch (err) {
       this.logger.warn("review.reload_failed", { message: err.message });
       this.items = [];
+      this.noItemsDue = true;
     }
-    this.currentIndex = 0;
-    this.showAnswer = false;
   }
 }
