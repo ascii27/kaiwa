@@ -59,8 +59,10 @@ model UserSettings {
   targetLang   String
   persona      PersonaTone     @default(ENCOURAGING)
   strictness   StrictnessLevel @default(GENTLE)
-  renderMode   String          @default("kanji")
-  defaultLevel String          @default("beginner")
+  renderMode          String          @default("kanji")
+  defaultLevel        String          @default("beginner")
+  levelAssessmentNote String?
+  levelSuggested      String?
 }
 
 model Session {

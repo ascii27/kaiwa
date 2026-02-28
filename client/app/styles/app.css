@@ -186,3 +186,40 @@ rt {
   border-radius: 1rem;
   padding: 1rem;
 }
+
+/* Flash toast — fixed overlay that fades in then out */
+.flash-toast {
+  position: fixed;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1080;
+  background: #d1e7dd;
+  color: #0a3622;
+  border: 1px solid #a3cfbb;
+  border-radius: 0.5rem;
+  padding: 0.65rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+  animation: flash-toast-lifecycle 3s ease forwards;
+}
+
+@keyframes flash-toast-lifecycle {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

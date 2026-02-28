@@ -3,6 +3,7 @@ import { inject as service } from "@ember/service";
 import { action } from "@ember/object";
 
 export default class SettingsController extends Controller {
+  @service flash;
   @service settings;
   @service api;
   @service session;
@@ -21,6 +22,7 @@ export default class SettingsController extends Controller {
     try {
       await this.settings.save(payload);
       this.logger.info("settings.saved");
+      this.flash.show("Settings saved.");
     } catch (err) {
       this.logger.error("settings.save_failed", { message: err.message });
     }

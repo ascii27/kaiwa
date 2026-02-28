@@ -1,7 +1,165 @@
-<div class="card border-0 shadow-sm">
-  <div class="card-body">
-    <h2 class="h5 mb-2">Home</h2>
-    <p class="text-muted mb-0">Dashboard & progress will appear here.</p>
+{{! Section 1 — Stats bar }}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body text-center">
+        <div class="fs-3 fw-bold text-primary">{{this.stats.totalSessions}}</div>
+        <div class="small text-muted">Total Sessions</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body text-center">
+        <div class="fs-3 fw-bold text-primary">{{this.stats.totalMinutes}}</div>
+        <div class="small text-muted">Minutes Practiced</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body text-center">
+        <div class="fs-3 fw-bold text-primary">{{this.stats.currentStreak}}</div>
+        <div class="small text-muted">Day Streak</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body text-center">
+        <div class="fs-3 fw-bold text-primary">{{this.stats.vocabularyLearned}}</div>
+        <div class="small text-muted">Vocabulary Learned</div>
+      </div>
+    </div>
   </div>
 </div>
 
+{{! Section 2 — Level }}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <h2 class="h5 mb-3">Your Level</h2>
+    <div class="d-flex align-items-start gap-3">
+      <span class="badge bg-primary fs-6 text-capitalize">{{this.displayLevel}}</span>
+      <p class="text-muted mb-0 small">
+        {{#if this.levelNote}}
+          {{this.levelNote}}
+        {{else}}
+          Keep practicing consistently to advance to the next level. Focus on grammar patterns and building vocabulary.
+        {{/if}}
+      </p>
+    </div>
+  </div>
+</div>
+
+{{! Section 3 — Guidance }}
+{{#if this.guidance.length}}
+  <div class="mb-4">
+    <h2 class="h5 mb-3">What to work on</h2>
+    {{#each this.guidance as |item|}}
+      {{#if (eq item.type "repeat_mistake")}}
+        <div class="alert alert-warning d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Recurring mistake:</strong> You've made {{item.count}} {{item.mistakeType}} errors. Drilling will help.
+          </div>
+          <button class="btn btn-sm btn-warning ms-3 text-nowrap" {{on "click" this.goToReview}}>Go to Review</button>
+        </div>
+      {{else if (eq item.type "vocab_due")}}
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{item.count}} vocab items due</strong> for review today.
+          </div>
+          <button class="btn btn-sm btn-info ms-3 text-nowrap" {{on "click" this.goToReview}}>Go to Review</button>
+        </div>
+      {{else if (eq item.type "inactive")}}
+        <div class="alert alert-secondary d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Time to practice!</strong> You haven't had a session in a few days.
+          </div>
+          <button class="btn btn-sm btn-secondary ms-3 text-nowrap" {{on "click" this.startConversation}}>Start a conversation</button>
+        </div>
+      {{else if (eq item.type "level_suggestion")}}
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Level update available.</strong> Based on your performance, a level adjustment is suggested.
+          </div>
+          <button class="btn btn-sm btn-info ms-3 text-nowrap" {{on "click" this.goToSettings}}>Update settings</button>
+        </div>
+      {{else}}
+        <div class="alert alert-success d-flex justify-content-between align-items-center">
+          <div>
+            <strong>You're on track!</strong> Keep building your skills with a new conversation.
+          </div>
+          <button class="btn btn-sm btn-success ms-3 text-nowrap" {{on "click" this.startConversation}}>Start a conversation</button>
+        </div>
+      {{/if}}
+    {{/each}}
+  </div>
+{{/if}}
+
+{{! Section 4 — Vocab progress }}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <h2 class="h5 mb-3">Vocabulary Progress</h2>
+    {{#if this.hasVocab}}
+      <div class="progress mb-2" style="height: 18px;">
+        <div
+          class="progress-bar bg-danger"
+          role="progressbar"
+          style="width: {{this.newPct}}%"
+          aria-label="New"
+        ></div>
+        <div
+          class="progress-bar bg-warning"
+          role="progressbar"
+          style="width: {{this.learningPct}}%"
+          aria-label="Learning"
+        ></div>
+        <div
+          class="progress-bar bg-success"
+          role="progressbar"
+          style="width: {{this.masteredPct}}%"
+          aria-label="Mastered"
+        ></div>
+      </div>
+      <div class="d-flex gap-3 small text-muted mb-2">
+        <span><span class="badge bg-danger me-1">{{this.vocabSummary.new}}</span>New</span>
+        <span><span class="badge bg-warning me-1">{{this.vocabSummary.learning}}</span>Learning</span>
+        <span><span class="badge bg-success me-1">{{this.vocabSummary.mastered}}</span>Mastered</span>
+      </div>
+    {{else}}
+      <p class="text-muted small mb-2">No vocabulary added yet. Save words during a conversation to track them here.</p>
+    {{/if}}
+    <button class="btn btn-sm btn-outline-primary" {{on "click" this.goToReview}}>Review due items</button>
+  </div>
+</div>
+
+{{! Section 5 — Recent sessions }}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <h2 class="h5 mb-3">Recent Sessions</h2>
+    {{#if this.recentSessions.length}}
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th class="text-muted fw-normal small">Date</th>
+            <th class="text-muted fw-normal small">Level</th>
+            <th class="text-muted fw-normal small">Duration</th>
+            <th class="text-muted fw-normal small">Mistakes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each this.recentSessions as |s|}}
+            <tr>
+              <td class="small">{{s.createdAt}}</td>
+              <td class="small text-capitalize">{{s.level}}</td>
+              <td class="small">{{s.durationMinutes}} min</td>
+              <td class="small">{{s.mistakeCount}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    {{else}}
+      <p class="text-muted small mb-0">No sessions yet. <button class="btn btn-link btn-sm p-0" {{on "click" this.startConversation}}>Start your first conversation.</button></p>
+    {{/if}}
+  </div>
+</div>

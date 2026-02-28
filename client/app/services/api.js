@@ -100,4 +100,9 @@ export default class ApiService extends Service {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
   }
+  getDashboard(token) {
+    return this.fetch("/dashboard", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  }
 }

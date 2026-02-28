@@ -8,6 +8,7 @@ import { sessionRouter } from "./routes/sessions.js";
 import { templateRouter } from "./routes/templates.js";
 import { settingsRouter } from "./routes/settings.js";
 import { reviewRouter } from "./routes/review.js";
+import { dashboardRouter } from "./routes/dashboard.js";
 
 export const createApp = () => {
   const app = express();
@@ -37,6 +38,7 @@ export const createApp = () => {
   app.use("/templates", templateRouter);
   app.use("/settings", settingsRouter);
   app.use("/review", reviewRouter);
+  app.use("/dashboard", dashboardRouter);
 
   return app;
 };
