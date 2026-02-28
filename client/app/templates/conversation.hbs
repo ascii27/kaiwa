@@ -44,7 +44,7 @@
       <div class="chat-thread" id="chat-thread">
         {{#each this.messages as |m idx|}}
           <div class="message-bubble {{m.role}}" {{on "click" (fn this.toggleTranslation idx)}}>
-            {{m.text}}
+            {{#if (eq m.role "ai")}}{{html-safe m.text}}{{else}}{{m.text}}{{/if}}
             {{#if m.translation}}
               <div class="translation-hint text-muted small mt-2">{{if m.showTranslation "Translation shown below" "Click bubble to view translation"}}</div>
               {{#if m.showTranslation}}

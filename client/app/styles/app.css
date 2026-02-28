@@ -127,6 +127,15 @@ main {
   border-top-left-radius: 0.3rem;
 }
 
+ruby {
+  ruby-align: center;
+}
+
+rt {
+  font-size: 0.6em;
+  line-height: 1;
+}
+
 .translation-output {
   font-size: 0.9rem;
   border-top: 1px dashed rgba(0, 0, 0, 0.1);

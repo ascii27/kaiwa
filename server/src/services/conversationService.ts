@@ -17,7 +17,8 @@ const strictnessPrompts: Record<StrictnessLevel, string> = {
 };
 
 const characterPrompts: Record<CharacterStyle, string> = {
-  kanji: "Respond using natural Japanese with kanji and kana as a native speaker would.",
+  kanji:
+    "Respond using natural Japanese with kanji and kana as a native speaker would. For every kanji word or compound, wrap it in an HTML ruby element with the hiragana reading in an <rt> tag, for example: <ruby>日本語<rt>にほんご</rt></ruby>. Include ruby annotations on all kanji throughout your reply.",
   hiragana: "Respond using only hiragana (no kanji).",
   romaji: "Respond using romaji (latin characters) only.",
 };
