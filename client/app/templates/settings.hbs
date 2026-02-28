@@ -4,45 +4,45 @@
     <form {{on "submit" this.save}} class="row g-3">
       <div class="col-md-4">
         <label class="form-label">Language</label>
-        <select class="form-select" value={{this.settings.targetLang}} {{on "change" (fn this.handleChange "targetLang")}}>
-          <option value="japanese">japanese</option>
-          <option value="english">english</option>
-          <option value="spanish">spanish</option>
-          <option value="korean">korean</option>
-          <option value="chinese">chinese</option>
+        <select class="form-select" {{on "change" (fn this.handleChange "targetLang")}}>
+          <option value="japanese" selected={{eq this.settings.targetLang "japanese"}}>japanese</option>
+          <option value="english" selected={{eq this.settings.targetLang "english"}}>english</option>
+          <option value="spanish" selected={{eq this.settings.targetLang "spanish"}}>spanish</option>
+          <option value="korean" selected={{eq this.settings.targetLang "korean"}}>korean</option>
+          <option value="chinese" selected={{eq this.settings.targetLang "chinese"}}>chinese</option>
         </select>
       </div>
       <div class="col-md-4">
         <label class="form-label">Persona</label>
-        <select class="form-select" value={{this.settings.persona}} {{on "change" (fn this.handleChange "persona")}}>
-          <option value="encouraging">Encouraging</option>
-          <option value="neutral">Neutral</option>
-          <option value="blunt">Blunt</option>
-          <option value="humorous">Humorous</option>
+        <select class="form-select" {{on "change" (fn this.handleChange "persona")}}>
+          <option value="encouraging" selected={{eq this.settings.persona "encouraging"}}>Encouraging</option>
+          <option value="neutral" selected={{eq this.settings.persona "neutral"}}>Neutral</option>
+          <option value="blunt" selected={{eq this.settings.persona "blunt"}}>Blunt</option>
+          <option value="humorous" selected={{eq this.settings.persona "humorous"}}>Humorous</option>
         </select>
       </div>
       <div class="col-md-4">
         <label class="form-label">Strictness</label>
-        <select class="form-select" value={{this.settings.strictness}} {{on "change" (fn this.handleChange "strictness")}}>
-          <option value="gentle">Gentle</option>
-          <option value="standard">Standard</option>
-          <option value="strict">Strict</option>
+        <select class="form-select" {{on "change" (fn this.handleChange "strictness")}}>
+          <option value="gentle" selected={{eq this.settings.strictness "gentle"}}>Gentle</option>
+          <option value="standard" selected={{eq this.settings.strictness "standard"}}>Standard</option>
+          <option value="strict" selected={{eq this.settings.strictness "strict"}}>Strict</option>
         </select>
       </div>
       <div class="col-md-4">
         <label class="form-label">Level</label>
-        <select class="form-select" value={{this.settings.defaultLevel}} {{on "change" (fn this.handleChange "defaultLevel")}}>
-          <option value="beginner">Beginner</option>
-          <option value="intermediate">Intermediate</option>
-          <option value="advanced">Advanced</option>
+        <select class="form-select" {{on "change" (fn this.handleChange "defaultLevel")}}>
+          <option value="beginner" selected={{eq this.settings.defaultLevel "beginner"}}>Beginner</option>
+          <option value="intermediate" selected={{eq this.settings.defaultLevel "intermediate"}}>Intermediate</option>
+          <option value="advanced" selected={{eq this.settings.defaultLevel "advanced"}}>Advanced</option>
         </select>
       </div>
       <div class="col-md-4">
         <label class="form-label">Output Script</label>
-        <select class="form-select" value={{this.settings.renderMode}} {{on "change" (fn this.handleChange "renderMode")}}>
-          <option value="kanji">Kanji + Kana</option>
-          <option value="hiragana">Hiragana only</option>
-          <option value="romaji">Romaji</option>
+        <select class="form-select" {{on "change" (fn this.handleChange "renderMode")}}>
+          <option value="kanji" selected={{eq this.settings.renderMode "kanji"}}>Kanji + Kana</option>
+          <option value="hiragana" selected={{eq this.settings.renderMode "hiragana"}}>Hiragana only</option>
+          <option value="romaji" selected={{eq this.settings.renderMode "romaji"}}>Romaji</option>
         </select>
       </div>
       <div class="col-12">
