@@ -1,3 +1,4 @@
+<div class="conversation-layout">
 <div class="mb-3 small text-muted">Using Settings: {{this.settings.targetLang}} • {{this.settings.defaultLevel}} • {{this.settings.persona}} • {{this.settings.strictness}} • {{this.settings.renderMode}} — <LinkTo @route="settings">Change</LinkTo></div>
 <div class="conversation-toolbar card border-0 shadow-sm mb-3">
   <div class="card-body py-2">
@@ -22,7 +23,7 @@
 
 {{#if this.sessionId}}
   <div class="chat-shell">
-    <div>
+    <div class="chat-main">
       {{#if this.sessionSummary}}
         <div class="alert alert-info small">Scenario: {{this.sessionSummary}}</div>
       {{/if}}
@@ -98,3 +99,4 @@
     <div class="card-body py-5 text-center text-muted">Start a session to begin practicing live conversations.</div>
   </div>
 {{/if}}
+</div>
