@@ -1,5 +1,4 @@
 packages:
   - "server"
   - "client"
-  - "client-ember"
   - "shared"
