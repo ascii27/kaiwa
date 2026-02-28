@@ -14,7 +14,7 @@ export default class ConversationController extends Controller {
   @tracked sessionId = null;
   @tracked sessionSummary = null;
   @tracked messages = [];
-  @tracked mistakes = [];
+  @tracked _mistakesMap = {};
   @tracked vocabulary = [];
   @tracked wsConnected = false;
   @tracked isStarting = false;
@@ -36,6 +36,13 @@ export default class ConversationController extends Controller {
 
   get isChatDisabled() {
     return !this.wsConnected;
+  }
+
+  get sortedMistakes() {
+    return Object.values(this._mistakesMap).sort((a, b) => {
+      if (b.recurrence !== a.recurrence) return b.recurrence - a.recurrence;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
   }
 
   @action selectScenario(e) {
@@ -63,7 +70,7 @@ export default class ConversationController extends Controller {
       this.sessionId = session.id;
       this.sessionSummary = template?.summary;
       this.messages = [];
-      this.mistakes = [];
+      this._mistakesMap = {};
       this.vocabulary = [];
       this.isAiResponding = false;
       this.levelSuggestion = null;
@@ -100,11 +107,17 @@ export default class ConversationController extends Controller {
       this.isAiResponding = false;
     });
     this.chat.on("mistakes_update", (payload) => {
-      const normalized = (payload ?? []).map((m) => ({
-        ...m,
-        type: typeof m.type === "string" ? m.type.toLowerCase() : m.type,
-      }));
-      this.mistakes = [...normalized, ...this.mistakes];
+      const updated = { ...this._mistakesMap };
+      for (const m of payload ?? []) {
+        const type = typeof m.type === "string" ? m.type.toLowerCase() : m.type;
+        const hash = m.hash || `${type}|${m.message}|${m.correction}`.toLowerCase();
+        if (updated[hash]) {
+          updated[hash] = { ...updated[hash], recurrence: updated[hash].recurrence + 1 };
+        } else {
+          updated[hash] = { ...m, type, hash, recurrence: 1 };
+        }
+      }
+      this._mistakesMap = updated;
     });
     this.chat.on("vocab_update", (payload) => {
       this.vocabulary = [...(payload ?? []), ...this.vocabulary];

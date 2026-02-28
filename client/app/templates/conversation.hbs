@@ -65,20 +65,32 @@
     <div class="side-panel">
       <h6 class="fw-bold">Corrections</h6>
       <div>
-        {{#if this.mistakes.length}}
-          {{#each this.mistakes as |mk|}}
+        {{#if this.sortedMistakes.length}}
+          {{#each this.sortedMistakes as |mk|}}
             <div class="mistake-item">
               <div class="d-flex justify-content-between align-items-center">
-                <div>
+                <div class="d-flex align-items-center gap-1 flex-wrap">
                   <span class="badge bg-secondary">{{mk.type}}</span>
-                  {{#if mk.subcategory}}<span class="badge bg-info ms-1">{{mk.subcategory}}</span>{{/if}}
+                  {{#if mk.subcategory}}<span class="badge bg-info">{{mk.subcategory}}</span>{{/if}}
+                  {{#if (gt mk.recurrence 1)}}<span class="badge bg-danger">×{{mk.recurrence}}</span>{{/if}}
                 </div>
-                <div>
+                <div class="d-flex align-items-center gap-1">
+                  {{#if mk.severityScore}}<span class="text-muted small">{{mk.severityScore}}/10</span>{{/if}}
                   <span class="badge bg-light text-dark">{{mk.severity}}</span>
                 </div>
               </div>
               <p class="mb-1 mt-2">{{mk.message}}</p>
               <p class="mb-0 text-success"><strong>Fix:</strong> {{mk.correction}}</p>
+              {{#if mk.recommendedDrills.length}}
+                <details class="mt-2">
+                  <summary class="text-muted small" style="cursor:pointer">Drills</summary>
+                  <ul class="small mt-1 mb-0 ps-3">
+                    {{#each mk.recommendedDrills as |drill|}}
+                      <li>{{drill}}</li>
+                    {{/each}}
+                  </ul>
+                </details>
+              {{/if}}
             </div>
           {{/each}}
         {{else}}
