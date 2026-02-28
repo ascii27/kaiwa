@@ -1,2 +1,53 @@
-<div class="card border-0 shadow-sm"><div class="card-body"><h2 class="h5 mb-2">Review</h2><p class="text-muted mb-0">Drills will be available here.</p></div></div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="h5 mb-0">Review</h2>
+      {{#unless this.isDone}}
+        <span class="text-muted small">{{this.currentIndex}} / {{this.items.length}}</span>
+      {{/unless}}
+    </div>
 
+    {{#if this.isDone}}
+      <div class="text-center py-5">
+        <div class="fs-1 mb-3">✓</div>
+        <p class="fw-semibold mb-1">All caught up!</p>
+        <p class="text-muted small">No vocabulary items are due right now. Come back later.</p>
+        <button class="btn btn-outline-primary btn-sm mt-3" {{on "click" this.restart}}>Check again</button>
+      </div>
+    {{else}}
+      <div class="flashcard">
+        <div class="flashcard-front text-center py-4">
+          <p class="flashcard-phrase mb-0">{{this.currentItem.phrase}}</p>
+        </div>
+
+        {{#if this.showAnswer}}
+          <hr />
+          <div class="flashcard-back text-center py-3">
+            <p class="fw-semibold mb-1">{{this.currentItem.translation}}</p>
+            {{#if this.currentItem.context}}
+              <p class="text-muted small mb-0">{{this.currentItem.context}}</p>
+            {{/if}}
+          </div>
+          <div class="d-flex gap-2 justify-content-center mt-4">
+            <button class="btn btn-outline-danger" {{on "click" (fn this.grade "new")}}>
+              Again
+              <span class="d-block small text-muted" style="font-size:0.65em">+1 day</span>
+            </button>
+            <button class="btn btn-outline-warning" {{on "click" (fn this.grade "learning")}}>
+              Good
+              <span class="d-block small text-muted" style="font-size:0.65em">+3 days</span>
+            </button>
+            <button class="btn btn-outline-success" {{on "click" (fn this.grade "mastered")}}>
+              Easy
+              <span class="d-block small text-muted" style="font-size:0.65em">+7 days</span>
+            </button>
+          </div>
+        {{else}}
+          <div class="text-center mt-4">
+            <button class="btn btn-primary" {{on "click" this.reveal}}>Show Answer</button>
+          </div>
+        {{/if}}
+      </div>
+    {{/if}}
+  </div>
+</div>

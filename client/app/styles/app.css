@@ -169,6 +169,17 @@ rt {
   margin-bottom: 0.75rem;
 }
 
+.flashcard {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.flashcard-phrase {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #0b286b;
+}
+
 .composer {
   background: var(--kaiwa-panel-bg);
   border: 1px solid var(--kaiwa-border);
