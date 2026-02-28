@@ -1,0 +1,100 @@
+<div class="mb-3 small text-muted">Using Settings: {{this.settings.targetLang}} • {{this.settings.level}} • {{this.settings.persona}} • {{this.settings.strictness}} • {{this.settings.renderMode}} — <LinkTo @route="settings">Change</LinkTo></div>
+<div class="conversation-toolbar card border-0 shadow-sm mb-3">
+  <div class="card-body py-2">
+    <form class="d-flex align-items-center gap-3 justify-content-between" {{on "submit" this.startSession}}>
+      <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 me-2">Scenario</label>
+        <select class="form-select form-select-sm" value={{this.selectedTemplateId}} {{on "change" this.selectScenario}}>
+          {{#each @model.templates as |t|}}
+            <option value={{t.id}}>{{t.summary}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        {{#unless this.canStart}}<span class="text-danger small">Select a scenario</span>{{/unless}}
+        <button class="btn btn-primary btn-sm" disabled={{this.isStartDisabled}}>{{if this.isStarting "Starting..." "Start Scenario"}}</button>
+      </div>
+    </form>
+  </div>
+ </div>
+
+{{#if this.error}}<div class="alert alert-danger">{{this.error}}</div>{{/if}}
+
+{{#if this.sessionId}}
+  <div class="chat-shell">
+    <div>
+      {{#if this.sessionSummary}}
+        <div class="alert alert-info small">Scenario: {{this.sessionSummary}}</div>
+      {{/if}}
+      <div class="chat-thread" id="chat-thread">
+        {{#each this.messages as |m idx|}}
+          <div class="message-bubble {{m.role}}" {{on "click" (fn this.toggleTranslation idx)}}>
+            {{m.text}}
+            {{#if m.translation}}
+              <div class="translation-hint text-muted small mt-2">{{if m.showTranslation "Translation shown below" "Click bubble to view translation"}}</div>
+              {{#if m.showTranslation}}
+                <div class="translation-output mt-2 text-muted">{{m.translation}}</div>
+              {{/if}}
+            {{/if}}
+          </div>
+        {{/each}}
+        {{#if this.isAiResponding}}<div class="text-muted small">Kaiwa is thinking...</div>{{/if}}
+      </div>
+      <div class="composer mt-3">
+        <form {{on "submit" this.sendMessage}} class="vstack gap-3">
+          <textarea class="form-control" rows="3" placeholder="Type..." disabled={{this.isChatDisabled}}></textarea>
+          <button class="btn btn-primary" disabled={{this.isChatDisabled}}>Send</button>
+        </form>
+      </div>
+    </div>
+    <div class="side-panel">
+      <h6 class="fw-bold">Corrections</h6>
+      <div>
+        {{#if this.mistakes.length}}
+          {{#each this.mistakes as |mk|}}
+            <div class="mistake-item">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge bg-secondary">{{mk.type}}</span>
+                  {{#if mk.subcategory}}<span class="badge bg-info ms-1">{{mk.subcategory}}</span>{{/if}}
+                </div>
+                <div>
+                  <span class="badge bg-light text-dark">{{mk.severity}}</span>
+                </div>
+              </div>
+              <p class="mb-1 mt-2">{{mk.message}}</p>
+              <p class="mb-0 text-success"><strong>Fix:</strong> {{mk.correction}}</p>
+            </div>
+          {{/each}}
+        {{else}}
+          <p class="text-muted small mb-0">No mistakes yet. Keep speaking!</p>
+        {{/if}}
+      </div>
+      <hr />
+      <h6 class="fw-bold">Vocabulary Bank</h6>
+      <div>
+        {{#if this.vocabulary.length}}
+          {{#each this.vocabulary as |v|}}
+            <div class="vocab-item">
+              <div class="fw-semibold">{{v.phrase}}</div>
+              <div class="text-muted small">{{v.translation}}</div>
+              <div class="small mt-2">{{v.context}}</div>
+            </div>
+          {{/each}}
+        {{else}}
+          <p class="text-muted small mb-2">Vocabulary you add will appear here.</p>
+        {{/if}}
+      </div>
+      <form class="vstack gap-2 mt-3" {{on "submit" this.saveVocab}}>
+        <input class="form-control" name="phrase" placeholder="Phrase" required disabled={{if this.sessionId false true}} />
+        <input class="form-control" name="translation" placeholder="Translation" required disabled={{if this.sessionId false true}} />
+        <textarea class="form-control" name="context" placeholder="Context sentence" rows="2" required disabled={{if this.sessionId false true}}></textarea>
+        <button class="btn btn-outline-primary btn-sm" disabled={{if this.sessionId false true}}>Save vocab</button>
+      </form>
+    </div>
+  </div>
+{{else}}
+  <div class="card border-0 shadow-sm">
+    <div class="card-body py-5 text-center text-muted">Start a session to begin practicing live conversations.</div>
+  </div>
+{{/if}}

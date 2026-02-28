@@ -6,19 +6,43 @@
 
 body {
   font-family:
-    "Inter",
     system-ui,
     -apple-system,
-    BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
   background-color: var(--kaiwa-bg);
 }
 
-#app {
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
   min-height: 100vh;
 }
 
+.app-shell.is-collapsed {
+  grid-template-columns: 64px 1fr;
+}
+
+.side-nav {
+  background: var(--kaiwa-panel-bg);
+  border-right: 1px solid var(--kaiwa-border);
+  padding: 1rem;
+}
+
+.side-nav.collapsed {
+  overflow: hidden;
+}
+
+.app-shell.is-collapsed .side-nav .nav-label,
+.app-shell.is-collapsed .side-nav .brand-label {
+  display: none;
+}
+
+main {
+  padding: 1rem 1rem 2rem;
+}
+
+/* Chat layout and bubbles */
 .chat-shell {
   display: grid;
   grid-template-columns: 1fr 320px;
@@ -41,22 +65,25 @@ body {
 }
 
 .message-bubble {
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.9rem;
   border-radius: 1rem;
   margin-bottom: 0.75rem;
-  max-width: 85%;
+  max-width: 75%;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 }
 
 .message-bubble.user {
   margin-left: auto;
   background-color: #0d6efd;
   color: #fff;
+  border-top-right-radius: 0.3rem;
 }
 
 .message-bubble.ai {
   background-color: #e9f2ff;
   color: #0b286b;
   cursor: pointer;
+  border-top-left-radius: 0.3rem;
 }
 
 .translation-output {
@@ -74,7 +101,7 @@ body {
   border: 1px solid var(--kaiwa-border);
   border-radius: 1rem;
   padding: 1rem;
-  max-height: 65vh;
+  height: 65vh;
   overflow-y: auto;
 }
 
@@ -91,8 +118,4 @@ body {
   border: 1px solid var(--kaiwa-border);
   border-radius: 1rem;
   padding: 1rem;
-}
-
-.badge-pill {
-  border-radius: 999px;
 }

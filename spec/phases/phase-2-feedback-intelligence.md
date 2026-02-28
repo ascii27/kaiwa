@@ -20,8 +20,11 @@
    - Add `dueAt` field to `VocabularyItem` and `MistakeReview` tables. Implement Leitner-style scheduling service.
    - Build review UI in side panel allowing users to practice due items (flashcard mini-flow) and update mastery state.
 4. **Scenario Selection & Content Expansion**
-   - Add intermediate/advanced template directories (e.g., `content/templates/japanese/intermediate`, `.../advanced`). Cover business meetings, negotiations, casual storytelling.
-   - Enhance session start modal to choose level + scenario; persist choice for analytics.
+   - Store conversation templates/prompts in the DB (`Template` table) instead of filesystem JSON.
+   - Add server template repository + service with typed schema and validations.
+   - Expose endpoints: `GET /templates?language&level` (public), `POST/PUT /templates` (admin only) for authoring.
+   - Seed intermediate/advanced content (business meetings, negotiations, storytelling) via migration/seed script.
+   - Enhance session start modal to choose level + scenario (DB-backed list) and persist selection for analytics.
 5. **Profile Settings & Goals**
    - Create `/settings` page where users set target proficiency, preferred personas, strictness defaults, study cadence.
    - Store settings in DB; auto-apply defaults when starting new sessions.
@@ -30,7 +33,7 @@
 
 - Persona differences are testable: switching tone presets yields distinct phrasing tracked via snapshot tests.
 - Mistake panel shows grouped entries with severity + recurrence counts; spaced repetition review flow schedules at least 3 due items after test conversation.
-- Users can select intermediate/advanced scenarios and receive tailored prompts/content.
+- Users can select intermediate/advanced scenarios and receive tailored prompts/content from the DB (no filesystem reads in production).
 - Profile settings persist and auto-apply to new sessions; strictness slider visibly changes correction density.
 - Weekly summary job runs in staging, sending mock email with metrics derived from sample data.
 - OpenAI health dashboard reflects simulated outage and triggers alert log entry.

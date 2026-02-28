@@ -54,6 +54,11 @@ export interface Mistake {
   severity: "low" | "medium" | "high";
   message: string;
   correction: string;
+  // Phase 2 extensions (optional for backward compat)
+  subcategory?: string;
+  severityScore?: number; // 0-1 normalized severity
+  hash?: string; // stable grouping key for recurrence
+  recurrence?: number; // frequency counter when grouped
   createdAt: Date;
 }
 
@@ -64,6 +69,8 @@ export interface VocabularyItem {
   translation: string;
   context: string;
   mastery: "new" | "learning" | "mastered";
+  // Phase 2: spaced repetition scheduling
+  dueAt?: Date;
   createdAt: Date;
 }
 

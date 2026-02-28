@@ -8,6 +8,7 @@
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "prisma db seed",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\""
@@ -51,5 +52,8 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.3.3",
     "vitest": "^0.34.6"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

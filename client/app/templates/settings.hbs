@@ -1,0 +1,45 @@
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <h2 class="h5 mb-3">Settings</h2>
+    <form {{on "submit" this.save}} class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Language</label>
+        <select class="form-select" value={{this.settings.targetLang}} {{on "change" (fn this.handleChange "targetLang")}}>
+          <option value="japanese">japanese</option>
+          <option value="english">english</option>
+          <option value="spanish">spanish</option>
+          <option value="korean">korean</option>
+          <option value="chinese">chinese</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Persona</label>
+        <select class="form-select" value={{this.settings.persona}} {{on "change" (fn this.handleChange "persona")}}>
+          <option value="encouraging">Encouraging</option>
+          <option value="neutral">Neutral</option>
+          <option value="blunt">Blunt</option>
+          <option value="humorous">Humorous</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Strictness</label>
+        <select class="form-select" value={{this.settings.strictness}} {{on "change" (fn this.handleChange "strictness")}}>
+          <option value="gentle">Gentle</option>
+          <option value="standard">Standard</option>
+          <option value="strict">Strict</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Output Script</label>
+        <select class="form-select" value={{this.settings.renderMode}} {{on "change" (fn this.handleChange "renderMode")}}>
+          <option value="kanji">Kanji + Kana</option>
+          <option value="hiragana">Hiragana only</option>
+          <option value="romaji">Romaji</option>
+        </select>
+      </div>
+      <div class="col-12">
+        <button class="btn btn-primary">Save Settings</button>
+      </div>
+    </form>
+  </div>
+</div>
