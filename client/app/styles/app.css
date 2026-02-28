@@ -155,6 +155,12 @@ rt {
   overflow-y: auto;
 }
 
+.btn-xs {
+  padding: 0.1rem 0.4rem;
+  font-size: 0.7rem;
+  border-radius: 0.25rem;
+}
+
 .mistake-item,
 .vocab-item {
   border: 1px solid var(--kaiwa-border);

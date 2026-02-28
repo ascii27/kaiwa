@@ -7,6 +7,7 @@ import { authRouter } from "./routes/auth.js";
 import { sessionRouter } from "./routes/sessions.js";
 import { templateRouter } from "./routes/templates.js";
 import { settingsRouter } from "./routes/settings.js";
+import { reviewRouter } from "./routes/review.js";
 
 export const createApp = () => {
   const app = express();
@@ -18,7 +19,7 @@ export const createApp = () => {
       if (!origin || allowed.includes(origin)) return callback(null, true);
       return callback(null, false);
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Authorization", "Content-Type"],
     optionsSuccessStatus: 204,
   };
@@ -35,6 +36,7 @@ export const createApp = () => {
   app.use("/sessions", sessionRouter);
   app.use("/templates", templateRouter);
   app.use("/settings", settingsRouter);
+  app.use("/review", reviewRouter);
 
   return app;
 };

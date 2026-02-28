@@ -88,4 +88,16 @@ export default class ApiService extends Service {
       body: JSON.stringify(vocab),
     });
   }
+  updateVocabMastery(token, sessionId, vocabId, mastery) {
+    return this.fetch(`/sessions/${sessionId}/vocabulary/${vocabId}`, {
+      method: "PATCH",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: JSON.stringify({ mastery }),
+    });
+  }
+  getDueVocab(token) {
+    return this.fetch("/review/due", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  }
 }

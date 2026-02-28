@@ -1,5 +1,6 @@
 import { prisma } from "../db/prisma.js";
 import type { CharacterStyle, PersonaTone, StrictnessLevel } from "@kaiwa/shared";
+import { computeNextDueAt } from "./spacedRepetitionService.js";
 
 export interface StartSessionInput {
   userId: string;
@@ -114,6 +115,29 @@ export interface VocabularyInput {
   translation: string;
   context: string;
 }
+
+export const updateVocabularyMastery = async (vocabId: string, userId: string, mastery: string) => {
+  const item = await prisma.vocabularyItem.findFirst({
+    where: { id: vocabId, session: { userId } },
+  });
+  if (!item) return null;
+  const dueAt = computeNextDueAt(mastery);
+  return prisma.vocabularyItem.update({
+    where: { id: vocabId },
+    data: { mastery: mastery.toUpperCase() as any, dueAt },
+  });
+};
+
+export const getDueVocabularyForUser = async (userId: string, limit = 20) => {
+  return prisma.vocabularyItem.findMany({
+    where: {
+      session: { userId },
+      dueAt: { lte: new Date() },
+    },
+    orderBy: { dueAt: "asc" },
+    take: limit,
+  });
+};
 
 export const saveVocabulary = async (items: VocabularyInput[]) => {
   if (!items.length) return [];

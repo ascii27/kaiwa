@@ -103,9 +103,17 @@
         {{#if this.vocabulary.length}}
           {{#each this.vocabulary as |v|}}
             <div class="vocab-item">
-              <div class="fw-semibold">{{v.phrase}}</div>
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="fw-semibold">{{v.phrase}}</div>
+                <span class="badge bg-secondary ms-1">{{if v.mastery v.mastery "new"}}</span>
+              </div>
               <div class="text-muted small">{{v.translation}}</div>
-              <div class="small mt-2">{{v.context}}</div>
+              <div class="small mt-1">{{v.context}}</div>
+              <div class="d-flex gap-1 mt-2">
+                <button class="btn btn-outline-secondary btn-xs {{if (eq v.mastery 'NEW') 'active'}}" {{on "click" (fn this.setVocabMastery v.id "new")}}>New</button>
+                <button class="btn btn-outline-warning btn-xs {{if (eq v.mastery 'LEARNING') 'active'}}" {{on "click" (fn this.setVocabMastery v.id "learning")}}>Learning</button>
+                <button class="btn btn-outline-success btn-xs {{if (eq v.mastery 'MASTERED') 'active'}}" {{on "click" (fn this.setVocabMastery v.id "mastered")}}>Mastered</button>
+              </div>
             </div>
           {{/each}}
         {{else}}

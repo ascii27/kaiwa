@@ -182,6 +182,21 @@ export default class ConversationController extends Controller {
     );
   }
 
+  @action async setVocabMastery(vocabId, mastery) {
+    if (!this.session.token || !this.sessionId) return;
+    try {
+      const { vocabulary: updated } = await this.api.updateVocabMastery(
+        this.session.token,
+        this.sessionId,
+        vocabId,
+        mastery,
+      );
+      this.vocabulary = this.vocabulary.map((v) => (v.id === vocabId ? updated : v));
+    } catch (err) {
+      this.error = err.message;
+    }
+  }
+
   @action async saveVocab(e) {
     e.preventDefault();
     if (!this.session.token || !this.sessionId) return;
