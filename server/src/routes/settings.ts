@@ -28,7 +28,11 @@ settingsRouter.get("/", async (req, res) => {
 });
 
 settingsRouter.put("/", async (req, res) => {
-  const body = settingsSchema.parse(req.body);
+  const parsed = settingsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+  }
+  const body = parsed.data;
   const upserted = await prisma.userSettings.upsert({
     where: { userId: req.userId! },
     update: {
