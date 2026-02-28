@@ -121,7 +121,10 @@ export default class ConversationController extends Controller {
     try {
       await this.chat.connect(this.session.token, sessionId);
       this.wsConnected = true;
-      if (initialPrompt) this.chat.sendSessionPrompt(initialPrompt);
+      if (initialPrompt) {
+        this.isAiResponding = true;
+        this.chat.sendSessionPrompt(initialPrompt);
+      }
     } catch (err) {
       this.error = "Unable to connect to chat gateway.";
     }

@@ -27,7 +27,7 @@ interface WsMessage {
 export const registerChatGateway = (server: Server) => {
   const wss = new WebSocketServer({ server, path: "/ws/chat" });
 
-  wss.on("connection", async (socket, request) => {
+  wss.on("connection", (socket, request) => {
     const url = new URL(request.url ?? "", "http://localhost");
     const token = url.searchParams.get("token");
     const sessionId = url.searchParams.get("sessionId");
@@ -37,21 +37,29 @@ export const registerChatGateway = (server: Server) => {
       return;
     }
 
-    try {
-      const decoded = jwt.verify(token, env.JWT_SECRET) as { userId: string };
-      const session = await prisma.session.findFirst({
-        where: { id: sessionId, userId: decoded.userId },
-      });
-      if (!session || session.status !== "ACTIVE") {
-        socket.close(4401, "Session not found");
-        return;
-      }
+    // Register the message handler immediately (synchronously) so no messages
+    // are lost while auth + DB setup runs asynchronously.
+    const pendingMessages: string[] = [];
+    let session: Awaited<ReturnType<typeof prisma.session.findFirst>> | null = null;
+    let authComplete = false;
 
-      socket.on("message", async (raw) => {
-        try {
-          const message = JSON.parse(raw.toString()) as WsMessage;
-          if (message.type === "user_message") {
-            await handleUserMessage({
+    const processMessage = async (raw: string) => {
+      if (!session) return;
+      try {
+        const message = JSON.parse(raw) as WsMessage;
+        if (message.type === "user_message") {
+          await handleUserMessage({
+            socket,
+            text: message.payload.text,
+            sessionId,
+            language: session.language,
+            persona: toPersona(session.persona),
+            strictness: toStrictness(session.strictness),
+            characterStyle: toCharacterStyle(session.characterStyle),
+          });
+        } else if (message.type === "session_prompt") {
+          await handleUserMessage(
+            {
               socket,
               text: message.payload.text,
               sessionId,
@@ -59,40 +67,55 @@ export const registerChatGateway = (server: Server) => {
               persona: toPersona(session.persona),
               strictness: toStrictness(session.strictness),
               characterStyle: toCharacterStyle(session.characterStyle),
-            });
-          } else if (message.type === "session_prompt") {
-            await handleUserMessage(
-              {
-                socket,
-                text: message.payload.text,
-                sessionId,
-                language: session.language,
-                persona: toPersona(session.persona),
-                strictness: toStrictness(session.strictness),
-                characterStyle: toCharacterStyle(session.characterStyle),
-              },
-              { skipMistakes: true },
-            );
-          } else if (message.type === "add_vocab") {
-            const vocab = await saveVocabulary([
-              {
-                sessionId,
-                phrase: message.payload.phrase,
-                translation: message.payload.translation,
-                context: message.payload.context,
-              },
-            ]);
-            socket.send(JSON.stringify({ type: "vocab_update", payload: vocab }));
-          }
-        } catch (error) {
-          logger.error({ error }, "WS processing error");
-          socket.send(JSON.stringify({ type: "error", payload: { message: "Invalid payload" } }));
+            },
+            { skipMistakes: true },
+          );
+        } else if (message.type === "add_vocab") {
+          const vocab = await saveVocabulary([
+            {
+              sessionId,
+              phrase: message.payload.phrase,
+              translation: message.payload.translation,
+              context: message.payload.context,
+            },
+          ]);
+          socket.send(JSON.stringify({ type: "vocab_update", payload: vocab }));
         }
-      });
-    } catch (error) {
-      logger.error({ error }, "WS auth failed");
-      socket.close(4401, "Invalid token");
-    }
+      } catch (error) {
+        logger.error({ error }, "WS processing error");
+        socket.send(JSON.stringify({ type: "error", payload: { message: "Invalid payload" } }));
+      }
+    };
+
+    socket.on("message", async (raw) => {
+      if (!authComplete) {
+        pendingMessages.push(raw.toString());
+        return;
+      }
+      await processMessage(raw.toString());
+    });
+
+    // Auth + DB lookup runs async; drain queued messages once ready
+    (async () => {
+      try {
+        const decoded = jwt.verify(token, env.JWT_SECRET) as { userId: string };
+        const found = await prisma.session.findFirst({
+          where: { id: sessionId, userId: decoded.userId },
+        });
+        if (!found || found.status !== "ACTIVE") {
+          socket.close(4401, "Session not found");
+          return;
+        }
+        session = found;
+        authComplete = true;
+        for (const msg of pendingMessages) {
+          await processMessage(msg);
+        }
+      } catch (error) {
+        logger.error({ error }, "WS auth failed");
+        socket.close(4401, "Invalid token");
+      }
+    })();
   });
 };
 
