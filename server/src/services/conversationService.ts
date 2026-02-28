@@ -22,24 +22,36 @@ const characterPrompts: Record<CharacterStyle, string> = {
   romaji: "Respond using romaji (latin characters) only.",
 };
 
+const levelPrompts: Record<string, string> = {
+  beginner:
+    "Use simple vocabulary and short sentences. Favour hiragana over kanji when possible. Be encouraging and patient.",
+  intermediate:
+    "Use natural conversational Japanese with a mix of kanji and kana. Include cultural nuance and idiomatic expressions where appropriate.",
+  advanced:
+    "Use sophisticated vocabulary, keigo (honorific speech), and complex grammar structures. Challenge the learner with nuanced topics and cultural context.",
+};
+
 export const buildSystemPrompt = ({
   persona,
   strictness,
   language,
   characterStyle,
+  level,
 }: {
   persona: PersonaTone;
   strictness: StrictnessLevel;
   language: string;
   characterStyle: CharacterStyle;
+  level: string;
 }) => `You are Kaiwa, a language partner helping learners practice ${language}.
 ${personaPrompts[persona]}
 ${strictnessPrompts[strictness]}
 ${characterPrompts[characterStyle]}
+${levelPrompts[level] ?? levelPrompts["beginner"]}
 Respond only in ${language} and encourage the learner to keep speaking.
 Return a single JSON object (no prose, markdown, or explanation) exactly like:
 {"reply":"<response in requested script>","translation":"<English translation>"}
-Your only response should be JSON. No other text should sent on the reply. 
+Your only response should be JSON. No other text should sent on the reply.
 You need to include both the reply and the translation every time.`;
 
 export interface ConversationTurn {
@@ -58,6 +70,7 @@ export const generatePartnerResponse = async (input: {
   strictness: StrictnessLevel;
   language: string;
   characterStyle: CharacterStyle;
+  level: string;
   turns: ConversationTurn[];
 }): Promise<PartnerResponse> => {
   const systemPrompt = buildSystemPrompt(input);

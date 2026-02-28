@@ -53,6 +53,7 @@ export const registerChatGateway = (server: Server) => {
             text: message.payload.text,
             sessionId,
             language: session.language,
+            level: session.level,
             persona: toPersona(session.persona),
             strictness: toStrictness(session.strictness),
             characterStyle: toCharacterStyle(session.characterStyle),
@@ -64,6 +65,7 @@ export const registerChatGateway = (server: Server) => {
               text: message.payload.text,
               sessionId,
               language: session.language,
+              level: session.level,
               persona: toPersona(session.persona),
               strictness: toStrictness(session.strictness),
               characterStyle: toCharacterStyle(session.characterStyle),
@@ -135,6 +137,7 @@ const handleUserMessage = async (
     text,
     sessionId,
     language,
+    level,
     persona,
     strictness,
     characterStyle,
@@ -143,6 +146,7 @@ const handleUserMessage = async (
     text: string;
     sessionId: string;
     language: string;
+    level: string;
     persona: PersonaTone;
     strictness: StrictnessLevel;
     characterStyle: CharacterStyle;
@@ -156,6 +160,7 @@ const handleUserMessage = async (
       persona,
       strictness,
       language,
+      level,
       characterStyle,
       turns: turns.map((turn) => ({
         role: turn.role === "user" ? "user" : "ai",
