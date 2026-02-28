@@ -53,7 +53,7 @@ export default class ConversationController extends Controller {
     try {
       const { session, template } = await this.api.startSession(this.session.token, {
         language: this.settings.targetLang,
-        level: this.settings.level,
+        level: this.settings.defaultLevel,
         persona: this.settings.persona,
         strictness: this.settings.strictness,
         characterStyle: this.settings.renderMode,

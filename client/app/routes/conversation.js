@@ -17,12 +17,16 @@ export default class ConversationRoute extends Route {
     this.logger.info("route.enter", { route: "conversation" });
     try {
       const lang = this.settings.targetLang || "japanese";
-      const level = this.settings.level || "beginner";
+      const level = this.settings.defaultLevel || "beginner";
       const { templates } = await this.api.listTemplates(lang, level);
       return { templates, language: lang, level };
     } catch (e) {
       this.logger.error("templates.load_failed", { message: e.message });
-      return { templates: [], language: this.settings.targetLang, level: this.settings.level };
+      return {
+        templates: [],
+        language: this.settings.targetLang,
+        level: this.settings.defaultLevel,
+      };
     }
   }
 }

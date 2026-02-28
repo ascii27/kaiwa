@@ -13,6 +13,7 @@ const settingsSchema = z.object({
   persona: z.enum(["encouraging", "neutral", "blunt", "humorous"]).default("encouraging"),
   strictness: z.enum(["gentle", "standard", "strict"]).default("standard"),
   renderMode: z.enum(["kanji", "hiragana", "romaji"]).default("kanji"),
+  defaultLevel: z.enum(["beginner", "intermediate", "advanced"]).default("beginner"),
 });
 
 const toResponse = (row: any) => ({
@@ -20,6 +21,7 @@ const toResponse = (row: any) => ({
   persona: (row?.persona ?? "ENCOURAGING").toString().toLowerCase(),
   strictness: (row?.strictness ?? "STANDARD").toString().toLowerCase(),
   renderMode: (row?.renderMode ?? "kanji").toString().toLowerCase(),
+  defaultLevel: (row?.defaultLevel ?? "beginner").toString().toLowerCase(),
 });
 
 settingsRouter.get("/", async (req, res) => {
@@ -40,6 +42,7 @@ settingsRouter.put("/", async (req, res) => {
       persona: body.persona.toUpperCase() as any,
       strictness: body.strictness.toUpperCase() as any,
       renderMode: body.renderMode,
+      defaultLevel: body.defaultLevel,
     },
     create: {
       userId: req.userId!,
@@ -47,6 +50,7 @@ settingsRouter.put("/", async (req, res) => {
       persona: body.persona.toUpperCase() as any,
       strictness: body.strictness.toUpperCase() as any,
       renderMode: body.renderMode,
+      defaultLevel: body.defaultLevel,
     },
   });
   return res.json({ settings: toResponse(upserted) });
