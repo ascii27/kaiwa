@@ -8,6 +8,7 @@ const LEVELS = ["beginner", "intermediate", "advanced"];
 
 export default class AdminController extends Controller {
   @service api;
+  @service flash;
   @service session;
   @service logger;
 
@@ -28,7 +29,6 @@ export default class AdminController extends Controller {
     startingPrompt: "",
   };
   @tracked isDirty = false;
-  @tracked status = null;
   @tracked error = null;
 
   constructor() {
@@ -80,7 +80,6 @@ export default class AdminController extends Controller {
   async refreshList() {
     if (!this.session.token) return;
     this.loadingList = true;
-    this.status = null;
     this.error = null;
     try {
       const { templates } = await this.api.listTemplates(this.filterLanguage, this.filterLevel);
@@ -115,7 +114,7 @@ export default class AdminController extends Controller {
     this.search = e.target.value;
   }
 
-  @action async selectTemplate(id) {
+  @action async selectTemplate(id, { showToast = true } = {}) {
     if (!id) return;
     try {
       const data = await this.api.getTemplate(id);
@@ -130,11 +129,10 @@ export default class AdminController extends Controller {
         startingPrompt: userLine,
       };
       this.isDirty = false;
-      this.status = "Loaded.";
+      if (showToast) this.flash.show("Loaded.");
       this.error = null;
     } catch (e) {
       this.error = e.message;
-      this.status = null;
     }
   }
 
@@ -148,7 +146,6 @@ export default class AdminController extends Controller {
       startingPrompt: "",
     };
     this.isDirty = false;
-    this.status = null;
     this.error = null;
   }
 
@@ -173,21 +170,20 @@ export default class AdminController extends Controller {
       if (this.mode === "new") {
         const created = await this.api.createTemplate(this.session.token, body);
         const tpl = created.template || created;
-        this.status = "Created.";
         if (tpl?.id) this.selectedId = tpl.id;
         this.mode = "edit";
         await this.refreshList();
-        if (this.selectedId) await this.selectTemplate(this.selectedId);
+        if (this.selectedId) await this.selectTemplate(this.selectedId, { showToast: false });
+        this.flash.show("Created.");
       } else if (this.selectedId) {
         await this.api.updateTemplate(this.session.token, this.selectedId, body);
-        this.status = "Updated.";
         await this.refreshList();
+        this.flash.show("Updated.");
       }
       this.isDirty = false;
       this.error = null;
     } catch (err) {
       this.error = err.message;
-      this.status = null;
     }
   }
 }
