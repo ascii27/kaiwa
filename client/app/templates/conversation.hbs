@@ -21,6 +21,20 @@
 
 {{#if this.error}}<div class="alert alert-danger">{{this.error}}</div>{{/if}}
 
+{{#if this.levelSuggestion}}
+  <div class="alert alert-info d-flex justify-content-between align-items-start">
+    <div>
+      <strong>Level suggestion:</strong> Based on your conversation, you might be ready for
+      <strong>{{this.levelSuggestion.suggestedLevel}}</strong>.
+      {{#if this.levelSuggestion.rationale}}
+        <span class="text-muted small ms-1">{{this.levelSuggestion.rationale}}</span>
+      {{/if}}
+      <LinkTo @route="settings" class="ms-2 alert-link">Update in Settings</LinkTo>
+    </div>
+    <button type="button" class="btn-close ms-3" {{on "click" this.dismissLevelSuggestion}} aria-label="Dismiss"></button>
+  </div>
+{{/if}}
+
 {{#if this.sessionId}}
   <div class="chat-shell">
     <div class="chat-main">

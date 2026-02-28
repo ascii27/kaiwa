@@ -16,8 +16,11 @@ import {
 } from "../services/sessionService.js";
 import { analyzeMistakes } from "../services/mistakeService.js";
 import { generatePartnerResponse } from "../services/conversationService.js";
+import { assessProficiency } from "../services/levelAssessmentService.js";
 import { prisma } from "../db/prisma.js";
 import { OpenAIUnavailableError } from "../ai/openaiClient.js";
+
+const ASSESSMENT_INTERVAL = 10;
 
 interface WsMessage {
   type: "user_message" | "add_vocab" | "session_prompt";
@@ -186,6 +189,17 @@ const handleUserMessage = async (
       const mistakes = await buildMistakes(sessionId, userTurn.id, text, language);
       if (mistakes.length) {
         socket.send(JSON.stringify({ type: "mistakes_update", payload: mistakes }));
+      }
+
+      if (turns.length % ASSESSMENT_INTERVAL === 0) {
+        const assessment = await assessProficiency(
+          turns.map((t) => ({ role: t.role === "user" ? "user" : "ai", text: t.text })),
+          level,
+          language,
+        );
+        if (assessment) {
+          socket.send(JSON.stringify({ type: "level_suggestion", payload: assessment }));
+        }
       }
     }
   } catch (error) {

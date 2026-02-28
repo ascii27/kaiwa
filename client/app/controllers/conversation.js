@@ -20,6 +20,7 @@ export default class ConversationController extends Controller {
   @tracked isStarting = false;
   @tracked isAiResponding = false;
   @tracked error = null;
+  @tracked levelSuggestion = null;
 
   constructor() {
     super(...arguments);
@@ -65,6 +66,7 @@ export default class ConversationController extends Controller {
       this.mistakes = [];
       this.vocabulary = [];
       this.isAiResponding = false;
+      this.levelSuggestion = null;
 
       try {
         const sessionData = await this.api.getSession(this.session.token, session.id);
@@ -106,6 +108,9 @@ export default class ConversationController extends Controller {
     });
     this.chat.on("vocab_update", (payload) => {
       this.vocabulary = [...(payload ?? []), ...this.vocabulary];
+    });
+    this.chat.on("level_suggestion", (payload) => {
+      this.levelSuggestion = payload;
     });
     this.chat.on("openai_error", (payload) => {
       this.error = payload.message;
@@ -150,6 +155,10 @@ export default class ConversationController extends Controller {
     this.isAiResponding = true;
     this.error = null;
     textarea.value = "";
+  }
+
+  @action dismissLevelSuggestion() {
+    this.levelSuggestion = null;
   }
 
   @action toggleTranslation(index) {
