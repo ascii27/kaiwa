@@ -11,7 +11,7 @@ export default class SettingsService extends Service {
   @tracked persona = "encouraging";
   @tracked strictness = "standard";
   @tracked renderMode = "kanji";
-  @tracked level = "beginner"; // optional default level
+  @tracked defaultLevel = "beginner";
 
   async load() {
     if (!this.session.token) return;
@@ -22,6 +22,7 @@ export default class SettingsService extends Service {
         this.persona = settings.persona ?? this.persona;
         this.strictness = settings.strictness ?? this.strictness;
         this.renderMode = settings.renderMode ?? this.renderMode;
+        this.defaultLevel = settings.defaultLevel ?? this.defaultLevel;
       }
       this.logger.info("settings.loaded");
     } catch (e) {

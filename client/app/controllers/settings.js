@@ -16,6 +16,7 @@ export default class SettingsController extends Controller {
       persona: this.settings.persona,
       strictness: this.settings.strictness,
       renderMode: this.settings.renderMode,
+      defaultLevel: this.settings.defaultLevel,
     };
     try {
       await this.settings.save(payload);

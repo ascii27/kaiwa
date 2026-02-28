@@ -17,9 +17,19 @@ const strictnessPrompts: Record<StrictnessLevel, string> = {
 };
 
 const characterPrompts: Record<CharacterStyle, string> = {
-  kanji: "Respond using natural Japanese with kanji and kana as a native speaker would.",
+  kanji:
+    'Respond using natural Japanese with kanji and kana. You MUST annotate every kanji character or compound with furigana using HTML ruby tags inside the reply field. Every single kanji must have a ruby tag — no exceptions. Example of the required reply format: "<ruby>日本語<rt>にほんご</rt></ruby>を<ruby>勉強<rt>べんきょう</rt></ruby>しています。"',
   hiragana: "Respond using only hiragana (no kanji).",
   romaji: "Respond using romaji (latin characters) only.",
+};
+
+const levelPrompts: Record<string, string> = {
+  beginner:
+    "Use simple vocabulary and short sentences. Favour hiragana over kanji when possible. Be encouraging and patient.",
+  intermediate:
+    "Use natural conversational Japanese with a mix of kanji and kana. Include cultural nuance and idiomatic expressions where appropriate.",
+  advanced:
+    "Use sophisticated vocabulary, keigo (honorific speech), and complex grammar structures. Challenge the learner with nuanced topics and cultural context.",
 };
 
 export const buildSystemPrompt = ({
@@ -27,20 +37,24 @@ export const buildSystemPrompt = ({
   strictness,
   language,
   characterStyle,
+  level,
 }: {
   persona: PersonaTone;
   strictness: StrictnessLevel;
   language: string;
   characterStyle: CharacterStyle;
+  level: string;
 }) => `You are Kaiwa, a language partner helping learners practice ${language}.
 ${personaPrompts[persona]}
 ${strictnessPrompts[strictness]}
 ${characterPrompts[characterStyle]}
+${levelPrompts[level] ?? levelPrompts["beginner"]}
 Respond only in ${language} and encourage the learner to keep speaking.
-Return a single JSON object (no prose, markdown, or explanation) exactly like:
-{"reply":"<response in requested script>","translation":"<English translation>"}
-Your only response should be JSON. No other text should sent on the reply. 
-You need to include both the reply and the translation every time.`;
+Your entire response must be a single JSON object with no prose, markdown, or extra text outside it.
+The JSON must have exactly two fields: "reply" (your response) and "translation" (the English translation).
+The "reply" field may contain HTML ruby tags if the script mode requires it.
+Example: {"reply":"<ruby>日本語<rt>にほんご</rt></ruby>を話しましょう。","translation":"Let's speak Japanese."}
+Both fields are required every time.`;
 
 export interface ConversationTurn {
   role: "user" | "ai";
@@ -53,11 +67,18 @@ export interface PartnerResponse {
   translation?: string;
 }
 
+const tempByStrictness: Record<StrictnessLevel, number> = {
+  gentle: 0.3,
+  standard: 0.4,
+  strict: 0.5,
+};
+
 export const generatePartnerResponse = async (input: {
   persona: PersonaTone;
   strictness: StrictnessLevel;
   language: string;
   characterStyle: CharacterStyle;
+  level: string;
   turns: ConversationTurn[];
 }): Promise<PartnerResponse> => {
   const systemPrompt = buildSystemPrompt(input);
@@ -72,22 +93,33 @@ export const generatePartnerResponse = async (input: {
           }),
   }));
 
-  logger.debug(
-    {
-      systemPrompt,
-      messages,
-    },
-    "OpenAI transmission",
-  );
+  logger.debug({ systemPrompt, messages }, "OpenAI transmission");
 
-  const tempByStrictness: Record<StrictnessLevel, number> = {
-    gentle: 0.3,
-    standard: 0.4,
-    strict: 0.5,
-  };
   const raw = await sendChatCompletion({
     systemPrompt,
     messages,
+    temperature: tempByStrictness[input.strictness] ?? 0.4,
+  });
+
+  return parsePartnerResponse(raw);
+};
+
+export const generateOpeningMessage = async (input: {
+  persona: PersonaTone;
+  strictness: StrictnessLevel;
+  language: string;
+  characterStyle: CharacterStyle;
+  level: string;
+  scenarioPrompt: string;
+}): Promise<PartnerResponse> => {
+  const basePrompt = buildSystemPrompt(input);
+  const systemPrompt = `${basePrompt}\n\nScenario: ${input.scenarioPrompt}\nBegin the conversation naturally based on this scenario. Greet the learner and open the roleplay.`;
+
+  logger.debug({ systemPrompt }, "OpenAI opening message");
+
+  const raw = await sendChatCompletion({
+    systemPrompt,
+    messages: [{ role: "user", content: "Please begin." }],
     temperature: tempByStrictness[input.strictness] ?? 0.4,
   });
 

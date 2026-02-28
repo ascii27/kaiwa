@@ -53,13 +53,14 @@ model User {
 }
 
 model UserSettings {
-  id         String          @id @default(cuid())
-  user       User            @relation(fields: [userId], references: [id])
-  userId     String          @unique
-  targetLang String
-  persona    PersonaTone     @default(ENCOURAGING)
-  strictness StrictnessLevel @default(GENTLE)
-  renderMode String          @default("kanji")
+  id           String          @id @default(cuid())
+  user         User            @relation(fields: [userId], references: [id])
+  userId       String          @unique
+  targetLang   String
+  persona      PersonaTone     @default(ENCOURAGING)
+  strictness   StrictnessLevel @default(GENTLE)
+  renderMode   String          @default("kanji")
+  defaultLevel String          @default("beginner")
 }
 
 model Session {

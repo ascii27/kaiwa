@@ -14,12 +14,13 @@ export default class ConversationController extends Controller {
   @tracked sessionId = null;
   @tracked sessionSummary = null;
   @tracked messages = [];
-  @tracked mistakes = [];
+  @tracked _mistakesMap = {};
   @tracked vocabulary = [];
   @tracked wsConnected = false;
   @tracked isStarting = false;
   @tracked isAiResponding = false;
   @tracked error = null;
+  @tracked levelSuggestion = null;
 
   constructor() {
     super(...arguments);
@@ -35,6 +36,13 @@ export default class ConversationController extends Controller {
 
   get isChatDisabled() {
     return !this.wsConnected;
+  }
+
+  get sortedMistakes() {
+    return Object.values(this._mistakesMap).sort((a, b) => {
+      if (b.recurrence !== a.recurrence) return b.recurrence - a.recurrence;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
   }
 
   @action selectScenario(e) {
@@ -53,7 +61,7 @@ export default class ConversationController extends Controller {
     try {
       const { session, template } = await this.api.startSession(this.session.token, {
         language: this.settings.targetLang,
-        level: this.settings.level,
+        level: this.settings.defaultLevel,
         persona: this.settings.persona,
         strictness: this.settings.strictness,
         characterStyle: this.settings.renderMode,
@@ -62,9 +70,10 @@ export default class ConversationController extends Controller {
       this.sessionId = session.id;
       this.sessionSummary = template?.summary;
       this.messages = [];
-      this.mistakes = [];
+      this._mistakesMap = {};
       this.vocabulary = [];
       this.isAiResponding = false;
+      this.levelSuggestion = null;
 
       try {
         const sessionData = await this.api.getSession(this.session.token, session.id);
@@ -98,14 +107,23 @@ export default class ConversationController extends Controller {
       this.isAiResponding = false;
     });
     this.chat.on("mistakes_update", (payload) => {
-      const normalized = (payload ?? []).map((m) => ({
-        ...m,
-        type: typeof m.type === "string" ? m.type.toLowerCase() : m.type,
-      }));
-      this.mistakes = [...normalized, ...this.mistakes];
+      const updated = { ...this._mistakesMap };
+      for (const m of payload ?? []) {
+        const type = typeof m.type === "string" ? m.type.toLowerCase() : m.type;
+        const hash = m.hash || `${type}|${m.message}|${m.correction}`.toLowerCase();
+        if (updated[hash]) {
+          updated[hash] = { ...updated[hash], recurrence: updated[hash].recurrence + 1 };
+        } else {
+          updated[hash] = { ...m, type, hash, recurrence: 1 };
+        }
+      }
+      this._mistakesMap = updated;
     });
     this.chat.on("vocab_update", (payload) => {
       this.vocabulary = [...(payload ?? []), ...this.vocabulary];
+    });
+    this.chat.on("level_suggestion", (payload) => {
+      this.levelSuggestion = payload;
     });
     this.chat.on("openai_error", (payload) => {
       this.error = payload.message;
@@ -121,7 +139,10 @@ export default class ConversationController extends Controller {
     try {
       await this.chat.connect(this.session.token, sessionId);
       this.wsConnected = true;
-      if (initialPrompt) this.chat.sendSessionPrompt(initialPrompt);
+      if (initialPrompt) {
+        this.isAiResponding = true;
+        this.chat.sendSessionPrompt(initialPrompt);
+      }
     } catch (err) {
       this.error = "Unable to connect to chat gateway.";
     }
@@ -149,12 +170,31 @@ export default class ConversationController extends Controller {
     textarea.value = "";
   }
 
+  @action dismissLevelSuggestion() {
+    this.levelSuggestion = null;
+  }
+
   @action toggleTranslation(index) {
     this.messages = this.messages.map((m, i) =>
       i === index && m.role === "ai" && m.translation
         ? { ...m, showTranslation: !m.showTranslation }
         : m,
     );
+  }
+
+  @action async setVocabMastery(vocabId, mastery) {
+    if (!this.session.token || !this.sessionId) return;
+    try {
+      const { vocabulary: updated } = await this.api.updateVocabMastery(
+        this.session.token,
+        this.sessionId,
+        vocabId,
+        mastery,
+      );
+      this.vocabulary = this.vocabulary.map((v) => (v.id === vocabId ? updated : v));
+    } catch (err) {
+      this.error = err.message;
+    }
   }
 
   @action async saveVocab(e) {

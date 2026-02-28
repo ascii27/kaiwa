@@ -8,6 +8,7 @@ import {
   listSessionsForUser,
   saveVocabulary,
   startSession,
+  updateVocabularyMastery,
 } from "../services/sessionService.js";
 import { getTemplateById } from "../templates/templateService.js";
 
@@ -18,6 +19,10 @@ const startSessionSchema = z.object({
   strictness: z.enum(["gentle", "standard", "strict"]).default("standard"),
   characterStyle: z.enum(["kanji", "hiragana", "romaji"]).default("kanji"),
   scenarioId: z.string().optional(),
+});
+
+const masterySchema = z.object({
+  mastery: z.enum(["new", "learning", "mastered"]),
 });
 
 const vocabularySchema = z.object({
@@ -89,4 +94,18 @@ sessionRouter.post("/:id/vocabulary", async (req, res) => {
   ]);
 
   res.status(201).json({ vocabulary: vocab });
+});
+
+sessionRouter.patch("/:id/vocabulary/:vocabId", async (req, res) => {
+  const parsed = masterySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid mastery value" });
+  }
+  const updated = await updateVocabularyMastery(
+    req.params.vocabId,
+    req.userId!,
+    parsed.data.mastery,
+  );
+  if (!updated) return res.status(404).json({ error: "Vocabulary item not found" });
+  res.json({ vocabulary: updated });
 });
