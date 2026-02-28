@@ -18,7 +18,7 @@ const strictnessPrompts: Record<StrictnessLevel, string> = {
 
 const characterPrompts: Record<CharacterStyle, string> = {
   kanji:
-    "Respond using natural Japanese with kanji and kana as a native speaker would. For every kanji word or compound, wrap it in an HTML ruby element with the hiragana reading in an <rt> tag, for example: <ruby>日本語<rt>にほんご</rt></ruby>. Include ruby annotations on all kanji throughout your reply.",
+    'Respond using natural Japanese with kanji and kana. You MUST annotate every kanji character or compound with furigana using HTML ruby tags inside the reply field. Every single kanji must have a ruby tag — no exceptions. Example of the required reply format: "<ruby>日本語<rt>にほんご</rt></ruby>を<ruby>勉強<rt>べんきょう</rt></ruby>しています。"',
   hiragana: "Respond using only hiragana (no kanji).",
   romaji: "Respond using romaji (latin characters) only.",
 };
@@ -50,10 +50,11 @@ ${strictnessPrompts[strictness]}
 ${characterPrompts[characterStyle]}
 ${levelPrompts[level] ?? levelPrompts["beginner"]}
 Respond only in ${language} and encourage the learner to keep speaking.
-Return a single JSON object (no prose, markdown, or explanation) exactly like:
-{"reply":"<response in requested script>","translation":"<English translation>"}
-Your only response should be JSON. No other text should sent on the reply.
-You need to include both the reply and the translation every time.`;
+Your entire response must be a single JSON object with no prose, markdown, or extra text outside it.
+The JSON must have exactly two fields: "reply" (your response) and "translation" (the English translation).
+The "reply" field may contain HTML ruby tags if the script mode requires it.
+Example: {"reply":"<ruby>日本語<rt>にほんご</rt></ruby>を話しましょう。","translation":"Let's speak Japanese."}
+Both fields are required every time.`;
 
 export interface ConversationTurn {
   role: "user" | "ai";
