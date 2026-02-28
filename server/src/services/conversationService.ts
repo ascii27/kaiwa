@@ -65,6 +65,12 @@ export interface PartnerResponse {
   translation?: string;
 }
 
+const tempByStrictness: Record<StrictnessLevel, number> = {
+  gentle: 0.3,
+  standard: 0.4,
+  strict: 0.5,
+};
+
 export const generatePartnerResponse = async (input: {
   persona: PersonaTone;
   strictness: StrictnessLevel;
@@ -85,22 +91,33 @@ export const generatePartnerResponse = async (input: {
           }),
   }));
 
-  logger.debug(
-    {
-      systemPrompt,
-      messages,
-    },
-    "OpenAI transmission",
-  );
+  logger.debug({ systemPrompt, messages }, "OpenAI transmission");
 
-  const tempByStrictness: Record<StrictnessLevel, number> = {
-    gentle: 0.3,
-    standard: 0.4,
-    strict: 0.5,
-  };
   const raw = await sendChatCompletion({
     systemPrompt,
     messages,
+    temperature: tempByStrictness[input.strictness] ?? 0.4,
+  });
+
+  return parsePartnerResponse(raw);
+};
+
+export const generateOpeningMessage = async (input: {
+  persona: PersonaTone;
+  strictness: StrictnessLevel;
+  language: string;
+  characterStyle: CharacterStyle;
+  level: string;
+  scenarioPrompt: string;
+}): Promise<PartnerResponse> => {
+  const basePrompt = buildSystemPrompt(input);
+  const systemPrompt = `${basePrompt}\n\nScenario: ${input.scenarioPrompt}\nBegin the conversation naturally based on this scenario. Greet the learner and open the roleplay.`;
+
+  logger.debug({ systemPrompt }, "OpenAI opening message");
+
+  const raw = await sendChatCompletion({
+    systemPrompt,
+    messages: [{ role: "user", content: "Please begin." }],
     temperature: tempByStrictness[input.strictness] ?? 0.4,
   });
 

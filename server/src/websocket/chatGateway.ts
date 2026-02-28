@@ -15,7 +15,10 @@ import {
   saveVocabulary,
 } from "../services/sessionService.js";
 import { analyzeMistakes } from "../services/mistakeService.js";
-import { generatePartnerResponse } from "../services/conversationService.js";
+import {
+  generatePartnerResponse,
+  generateOpeningMessage,
+} from "../services/conversationService.js";
 import { assessProficiency } from "../services/levelAssessmentService.js";
 import { prisma } from "../db/prisma.js";
 import { OpenAIUnavailableError } from "../ai/openaiClient.js";
@@ -62,19 +65,16 @@ export const registerChatGateway = (server: Server) => {
             characterStyle: toCharacterStyle(session.characterStyle),
           });
         } else if (message.type === "session_prompt") {
-          await handleUserMessage(
-            {
-              socket,
-              text: message.payload.text,
-              sessionId,
-              language: session.language,
-              level: session.level,
-              persona: toPersona(session.persona),
-              strictness: toStrictness(session.strictness),
-              characterStyle: toCharacterStyle(session.characterStyle),
-            },
-            { skipMistakes: true },
-          );
+          await handleSessionPrompt({
+            socket,
+            scenarioPrompt: message.payload.text,
+            sessionId,
+            language: session.language,
+            level: session.level,
+            persona: toPersona(session.persona),
+            strictness: toStrictness(session.strictness),
+            characterStyle: toCharacterStyle(session.characterStyle),
+          });
         } else if (message.type === "add_vocab") {
           const vocab = await saveVocabulary([
             {
@@ -133,6 +133,65 @@ const toStrictness = (value: string): StrictnessLevel => {
 };
 
 const toCharacterStyle = (value: string): CharacterStyle => value.toLowerCase() as CharacterStyle;
+
+const handleSessionPrompt = async ({
+  socket,
+  scenarioPrompt,
+  sessionId,
+  language,
+  level,
+  persona,
+  strictness,
+  characterStyle,
+}: {
+  socket: WebSocket;
+  scenarioPrompt: string;
+  sessionId: string;
+  language: string;
+  level: string;
+  persona: PersonaTone;
+  strictness: StrictnessLevel;
+  characterStyle: CharacterStyle;
+}) => {
+  try {
+    const response = await generateOpeningMessage({
+      persona,
+      strictness,
+      language,
+      level,
+      characterStyle,
+      scenarioPrompt,
+    });
+    const aiTurn = await saveTurn(sessionId, "ai", response.reply, response.translation);
+    socket.send(
+      JSON.stringify({
+        type: "chat_message",
+        payload: {
+          role: "ai",
+          text: response.reply,
+          turnId: aiTurn.id,
+          translation: response.translation,
+        },
+      }),
+    );
+  } catch (error) {
+    if (error instanceof OpenAIUnavailableError) {
+      socket.send(
+        JSON.stringify({
+          type: "openai_error",
+          payload: { message: "OpenAI unavailable. Please try again later." },
+        }),
+      );
+      return;
+    }
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        payload: { message: "Failed to start session." },
+      }),
+    );
+  }
+};
 
 const handleUserMessage = async (
   {
